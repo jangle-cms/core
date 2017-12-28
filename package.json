@@ -1,0 +1,21 @@
+{
+  "name": "jangle-core",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "mongoose": "^4.13.8",
+    "ramda": "^0.25.0"
+  },
+  "devDependencies": {
+    "@types/mongoose": "^4.7.31",
+    "@types/ramda": "^0.25.10",
+    "typescript": "^2.6.2"
+  }
+}
