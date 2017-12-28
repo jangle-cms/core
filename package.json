@@ -5,7 +5,8 @@
   "main": "./lib/index.js",
   "types": "./lib/index.d.ts",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "node_modules/typescript/bin/tsc",
+    "watch": "node_modules/typescript/bin/tsc -w"
   },
   "keywords": [],
   "author": "",
