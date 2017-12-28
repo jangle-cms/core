@@ -1,4 +1,4 @@
-import { Schema } from 'mongoose'
+import { Schema, ModelPopulateOptions } from 'mongoose'
 
 // General
 
@@ -12,13 +12,13 @@ export type Dict<T> = { [key: string]: T }
 
 export type Config = {
   mongo: {
-    content: MongoUri,
+    content: MongoUri
     live: MongoUri
-  },
-  schemas: Dict<Schema>,
-  secret: string,
+  }
+  schemas: Dict<Schema>
+  secret: string
   user?: {
-    email: string,
+    email: string
     password: string
   }
 }
@@ -31,42 +31,42 @@ export type Status = 'visible' | 'hidden'
 export type Role = 'admin' | 'editor'
 
 export type Signature = {
-  by: Id,
+  by: Id
   at: Date
 }
 
 export interface IHistory {
-  itemId: Id,
-  version: number,
-  status: Status,
-  updated: Signature,
+  itemId: Id
+  version: number
+  status: Status
+  updated: Signature
   changes: {
-    field: string,
+    field: string
     oldValue: any
   }[]
 }
 
 export type JangleSchema = {
-  name: string,
+  name: string
   labels: {
-    singular: string,
+    singular: string
     plural: string
-  },
+  }
   fields: {
-    name: string,
-    label: string,
-    type: string,
-    default: string,
+    name: string
+    label: string
+    type: string
+    default: string
     required: boolean
   }[]
 }
 
 export interface IUser {
-  email: string,
-  password: string,
+  email: string
+  password: string
   role: Role
   name?: {
-    first: string,
+    first: string
     last: string
   }
 }
@@ -76,24 +76,24 @@ export interface IUser {
 export type Token = string
 
 export type AnyParams = {
-  where?: object
+  where?: Object
 }
 
 export type CountParams = {
-  where?: object
+  where?: Object
 }
 
 export type FindParams = {
-  where?: object,
-  skip?: number,
-  limit?: number,
-  populate?: object,
-  select?: object,
-  sort?: object,
+  where?: object
+  skip?: number
+  limit?: number
+  populate?: ModelPopulateOptions
+  select?: object
+  sort?: object
 }
 
 export type GetParams = {
-  populate?: object,
+  populate?: object
   select?: object
 }
 
@@ -209,13 +209,13 @@ export type CreateInitialAdminFunction = (email: string, password: string) => Pr
 export type HasInitialAdmin = () => Promise<boolean>
 
 export type Jangle = {
-  services: Dict<Service<Document>>,
+  services: Dict<Service<Document>>
   auth: {
-    User: MetaService<IUser>,
-    signIn: SignInFunction,
-    signUp: SignUpFunction,
-    createInitialAdmin: CreateInitialAdminFunction,
-    hasInitialAdmin: HasInitialAdmin,
+    User: MetaService<IUser>
+    signIn: SignInFunction
+    signUp: SignUpFunction
+    createInitialAdmin: CreateInitialAdminFunction
+    hasInitialAdmin: HasInitialAdmin
     token?: Token
   }
 }
