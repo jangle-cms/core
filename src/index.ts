@@ -25,7 +25,7 @@ const parseConfig = (config: JangleConfig, baseConfig: JangleConfig): Promise<Ja
   })
 
 const parseConfigAsUser = (config: JangleConfigAsUser, baseConfig: JangleConfig): Promise<JangleConfigAsUser> =>
-  config && config.user && config.user.email && config.user.password && typeof config.user.email === 'string' && typeof config.user.password === 'string'
+  config && config.user && typeof config.user.email === 'string' && typeof config.user.password === 'string'
     ? parseConfig(config, baseConfig)
         .then(({ mongo, schemas, secret }) => ({
           mongo,
