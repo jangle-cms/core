@@ -75,26 +75,31 @@ export interface IUser {
 
 export type Token = string
 
+export type WhereOptions = object
+export type SelectOptions = object
+export type SortOptionValue = 'asc' | 'desc' | 'ascending' | 'descending' | -1 | 1
+export type SortOptions = Dict<SortOptionValue>
+
 export type AnyParams = {
-  where?: Object
+  where?: WhereOptions
 }
 
 export type CountParams = {
-  where?: Object
+  where?: WhereOptions
 }
 
 export type FindParams = {
-  where?: object
+  where?: WhereOptions
   skip?: number
   limit?: number
-  populate?: ModelPopulateOptions
-  select?: object
-  sort?: object
+  populate?: string | ModelPopulateOptions
+  select?: string | SelectOptions
+  sort?: string | SortOptions
 }
 
 export type GetParams = {
-  populate?: object
-  select?: object
+  populate?: string | ModelPopulateOptions
+  select?: string | SelectOptions
 }
 
 export type AnyFunction = (params?: AnyParams) => Promise<boolean>
