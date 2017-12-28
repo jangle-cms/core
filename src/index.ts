@@ -1,44 +1,44 @@
 import { Schema } from 'mongoose'
-import { Dict, Trash, Config, Jangle } from './types'
+import { Dict, JangleConfig, JangleConfigAsUser, JangleCore, JangleCoreAsUser } from './types'
 
 const isDictOf = (Type: any, thing: Dict<any> | undefined | null): boolean =>
   thing
     ? Object.keys(thing).every(member => thing[member] instanceof Type)
     : false
 
-const parseConfig = (config: Trash, baseConfig: Config): Promise<Config> =>
+const parseConfig = (config: JangleConfig, baseConfig: JangleConfig): Promise<JangleConfig> =>
   Promise.resolve({
     mongo: {
-      content: config
-        && (config as any).mongo
-        && typeof (config as any).mongo.content === 'string'
-          ? ((config as any).mongo.content as string)
-          : baseConfig.mongo.content,
-      live: config
-        && (config as any).mongo
-        && typeof (config as any).mongo.live === 'string'
-          ? ((config as any).mongo.live as string)
-          : baseConfig.mongo.live
+      content: config && config.mongo && typeof config.mongo.content === 'string'
+        ? config.mongo.live
+        : baseConfig.mongo.content,
+      live: config && config.mongo && typeof config.mongo.live === 'string'
+        ? config.mongo.live
+        : baseConfig.mongo.live
     },
-    schemas: config
-      && isDictOf(Schema, (config as any).schemas)
-        ? ((config as any).schemas as Dict<Schema>)
+    schemas: config && isDictOf(Schema, config.schemas)
+        ? config.schemas
         : baseConfig.schemas,
-    secret: config && typeof (config as any).secret === 'string'
-      ? ((config as any).secret as string)
-      : baseConfig.secret,
-    user: config
-      && (config as any).user
-      && typeof (config as any).user.email === 'string'
-      && typeof (config as any).user.password === 'string'
-        ? {
-          email: ((config as any).user.email as string),
-          password: ((config as any).user.password as string)
-        }
-        : undefined
+    secret: config && typeof config.secret === 'string'
+      ? config.secret
+      : baseConfig.secret
   })
 
-const baseConfig: Config = {
+const parseConfigAsUser = (config: JangleConfigAsUser, baseConfig: JangleConfig): Promise<JangleConfigAsUser> =>
+  config && config.user && config.user.email && config.user.password && typeof config.user.email === 'string' && typeof config.user.password === 'string'
+    ? parseConfig(config, baseConfig)
+        .then(({ mongo, schemas, secret }) => ({
+          mongo,
+          schemas,
+          secret,
+          user: {
+            email: config.user.email,
+            password: config.user.password
+          }
+        }))
+    : Promise.reject('Must provided a user.')
+
+const baseConfig: JangleConfig = {
   mongo: {
     content: 'mongodb://localhost/jangle',
     live: 'mongodb://localhost/jangle'
@@ -47,11 +47,20 @@ const baseConfig: Config = {
   secret: 'super-secret'
 }
 
-// export default {
-//   start: (config: Trash): Promise<Jangle> =>
-//     parseConfig(config, baseConfig)
-//       .then(models.initialize)
-//       .then(services.initialize)
-//       .then(auth.initialize)
-//       .catch(handleError)
-// }
+export default {
+
+  start: (config: JangleConfig): Promise<JangleCore> =>
+    parseConfig(config, baseConfig)
+      .then(models.initialize)
+      .then(services.initialize)
+      .then(auth.initialize)
+      .catch(handleError),
+
+  startAsUser: (config: JangleConfigAsUser): Promise<JangleCoreAsUser> =>
+    parseConfigAsUser(config, baseConfig)
+      .then(models.initialize)
+      .then(services.initializeAsUser(config ? config.user: undefined))
+      .then(auth.initializeAsUser(config ? config.user: undefined))
+      .catch(handleError)
+
+}
