@@ -102,6 +102,46 @@ export type GetParams = {
   select?: string | SelectOptions
 }
 
+export type IAnyFunction = (...params: any[]) => Promise<boolean>
+export type ICountFunction = (...params: any[]) => Promise<number>
+export type IFindFunction<T> = (...params: any[]) => Promise<T[]>
+export type IGetFunction<T> = (...params: any[]) => Promise<T>
+export type ICreateFunction<T> = (...params: any[]) => Promise<T>
+export type IUpdateFunction<T> = (...params: any[]) => Promise<T>
+export type IPatchFunction<T> = (...params: any[]) => Promise<T>
+export type IRemoveFunction<T> = (...params: any[]) => Promise<T>
+export type IIsLiveFunction = (...params: any[]) => Promise<boolean>
+export type IPublishFunction<T> = (...params: any[]) => Promise<T>
+export type IUnpublishFunction<T> = (...params: any[]) => Promise<T>
+export type IHistoryFunction = (...params: any[]) => Promise<IHistory[]>
+export type IPreviewFunction<T> = (...params: any[]) => Promise<T>
+export type IRestoreFunction<T> = (...params: any[]) => Promise<T>
+export type ISchemaFunction = (...params: any[]) => Promise<JangleSchema>
+
+export interface IReadableService<T> {
+  any: IAnyFunction
+  count: ICountFunction
+  find: IFindFunction<T>
+  get: IGetFunction<T>
+}
+
+export interface IUpdatableService<T> extends IReadableService<T> {
+  create: ICreateFunction<T>
+  update: IUpdateFunction<T>
+  patch: IPatchFunction<T>
+  remove: IRemoveFunction<T>
+}
+
+export interface IJangleService<T> extends IUpdatableService<T> {
+  isLive: IIsLiveFunction
+  publish: IPublishFunction<T>
+  unpublish: IUnpublishFunction<T>
+  history: IHistoryFunction
+  preview: IPreviewFunction<T>
+  restore: IRestoreFunction<T>
+  schema: ISchemaFunction
+}
+
 export type AnyFunction = (params?: AnyParams) => Promise<boolean>
 export type CountFunction = (params?: CountParams) => Promise<number>
 export type FindFunction<T> = (params?: FindParams) => Promise<T[]>
@@ -134,14 +174,14 @@ export type ProtectedPreviewFunction<T> = (token: Token, id: Id, version: number
 export type ProtectedRestoreFunction<T> = (token: Token, id: Id, version: number) => Promise<T>
 export type ProtectedSchemaFunction = (token: Token) => Promise<JangleSchema>
 
-export type LiveService<T> = {
+export class LiveService<T> implements IReadableService<T> {
   any: AnyFunction
   count: CountFunction
   find: FindFunction<T>
   get: GetFunction<T>
 }
 
-export type MetaService<T> = {
+export class MetaService<T> implements IUpdatableService<T> {
 
   any: ProtectedAnyFunction
   count: ProtectedCountFunction
@@ -155,7 +195,7 @@ export type MetaService<T> = {
 
 }
 
-export type AuthenticatedService<T> = {
+export class AuthenticatedService<T> implements IJangleService<T> {
 
   any: AnyFunction
   count: CountFunction
@@ -179,7 +219,7 @@ export type AuthenticatedService<T> = {
 
 }
 
-export type Service<T> = {
+export class Service<T> implements IJangleService<T> {
 
   any: ProtectedAnyFunction
   count: ProtectedCountFunction
@@ -194,7 +234,6 @@ export type Service<T> = {
   isLive: ProtectedIsLiveFunction
   publish: ProtectedPublishFunction<T>
   unpublish: ProtectedUnpublishFunction<T>
-
   history: ProtectedHistoryFunction
   preview: ProtectedPreviewFunction<T>
   restore: ProtectedRestoreFunction<T>
