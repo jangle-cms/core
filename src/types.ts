@@ -63,6 +63,7 @@ export type JangleSchema = {
 
 export interface IUser {
   email: string,
+  password: string,
   role: Role
   name?: {
     first: string,
