@@ -109,52 +109,6 @@ export type GetParams = {
   select?: string | SelectOptions
 }
 
-export type SomeAnyFunction = (...params: any[]) => Promise<boolean>
-export type SomeCountFunction = (...params: any[]) => Promise<number>
-export type SomeFindFunction<T> = (...params: any[]) => Promise<T[]>
-export type SomeGetFunction<T> = (...params: any[]) => Promise<T>
-export type SomeCreateFunction<T> = (...params: any[]) => Promise<T>
-export type SomeUpdateFunction<T> = (...params: any[]) => Promise<T>
-export type SomePatchFunction<T> = (...params: any[]) => Promise<T>
-export type SomeRemoveFunction<T> = (...params: any[]) => Promise<T>
-export type SomeIsLiveFunction = (...params: any[]) => Promise<boolean>
-export type SomePublishFunction<T> = (...params: any[]) => Promise<T>
-export type SomeUnpublishFunction<T> = (...params: any[]) => Promise<T>
-export type SomeHistoryFunction = (...params: any[]) => Promise<IHistory[]>
-export type SomePreviewFunction<T> = (...params: any[]) => Promise<T>
-export type SomeRestoreFunction<T> = (...params: any[]) => Promise<T>
-export type SomeSchemaFunction = (...params: any[]) => Promise<JangleSchema>
-
-export interface IReadableService<T> {
-  any: SomeAnyFunction
-  count: SomeCountFunction
-  find: SomeFindFunction<T>
-  get: SomeGetFunction<T>
-}
-
-export interface IUpdatableService<T> extends IReadableService<T> {
-  create: SomeCreateFunction<T>
-  update: SomeUpdateFunction<T>
-  patch: SomePatchFunction<T>
-  remove: SomeRemoveFunction<T>
-}
-
-export interface IJangleService<T> extends IUpdatableService<T> {
-
-  isLive: SomeIsLiveFunction
-  publish: SomePublishFunction<T>
-  unpublish: SomeUnpublishFunction<T>
-
-  history: SomeHistoryFunction
-  preview: SomePreviewFunction<T>
-  restore: SomeRestoreFunction<T>
-
-  schema: SomeSchemaFunction
-
-  live: LiveService
-
-}
-
 export type AnyFunction = (params?: AnyParams) => Promise<boolean>
 export type CountFunction = (params?: CountParams) => Promise<number>
 export type FindFunction<T> = (params?: FindParams) => Promise<T[]>
@@ -187,54 +141,14 @@ export type ProtectedPreviewFunction<T> = (token: Token, id: Id, version: number
 export type ProtectedRestoreFunction<T> = (token: Token, id: Id, version: number) => Promise<T>
 export type ProtectedSchemaFunction = (token: Token) => Promise<JangleSchema>
 
-export class LiveService implements IReadableService<IItem> {
+export type LiveService = {
   any: AnyFunction
   count: CountFunction
   find: FindFunction<IItem>
   get: GetFunction<IItem>
 }
 
-export class MetaService<T> implements IUpdatableService<T> {
-
-  any: ProtectedAnyFunction
-  count: ProtectedCountFunction
-  find: ProtectedFindFunction<T>
-  get: ProtectedGetFunction<T>
-
-  create: ProtectedCreateFunction<T>
-  update: ProtectedUpdateFunction<T>
-  patch: ProtectedPatchFunction<T>
-  remove: ProtectedRemoveFunction<T>
-
-}
-
-export class Service<T> implements IJangleService<T> {
-
-  any: ProtectedAnyFunction
-  count: ProtectedCountFunction
-  find: ProtectedFindFunction<T>
-  get: ProtectedGetFunction<T>
-
-  create: ProtectedCreateFunction<T>
-  update: ProtectedUpdateFunction<T>
-  patch: ProtectedPatchFunction<T>
-  remove: ProtectedRemoveFunction<T>
-
-  isLive: ProtectedIsLiveFunction
-  publish: ProtectedPublishFunction<T>
-  unpublish: ProtectedUnpublishFunction<T>
-
-  history: ProtectedHistoryFunction
-  preview: ProtectedPreviewFunction<T>
-  restore: ProtectedRestoreFunction<T>
-
-  schema: ProtectedSchemaFunction
-
-  live: LiveService
-
-}
-
-export class AuthenticatedMetaService<T> implements IUpdatableService<T> {
+export type MetaService<T> = {
 
   any: AnyFunction
   count: CountFunction
@@ -248,7 +162,7 @@ export class AuthenticatedMetaService<T> implements IUpdatableService<T> {
 
 }
 
-export class AuthenticatedService<T> implements IJangleService<T> {
+export type Service<T> = {
 
   any: AnyFunction
   count: CountFunction
@@ -274,6 +188,46 @@ export class AuthenticatedService<T> implements IJangleService<T> {
 
 }
 
+export type ProtectedMetaService<T> = {
+
+  any: ProtectedAnyFunction
+  count: ProtectedCountFunction
+  find: ProtectedFindFunction<T>
+  get: ProtectedGetFunction<T>
+
+  create: ProtectedCreateFunction<T>
+  update: ProtectedUpdateFunction<T>
+  patch: ProtectedPatchFunction<T>
+  remove: ProtectedRemoveFunction<T>
+
+}
+
+export type ProtectedService<T> = {
+
+  any: ProtectedAnyFunction
+  count: ProtectedCountFunction
+  find: ProtectedFindFunction<T>
+  get: ProtectedGetFunction<T>
+
+  create: ProtectedCreateFunction<T>
+  update: ProtectedUpdateFunction<T>
+  patch: ProtectedPatchFunction<T>
+  remove: ProtectedRemoveFunction<T>
+
+  isLive: ProtectedIsLiveFunction
+  publish: ProtectedPublishFunction<T>
+  unpublish: ProtectedUnpublishFunction<T>
+
+  history: ProtectedHistoryFunction
+  preview: ProtectedPreviewFunction<T>
+  restore: ProtectedRestoreFunction<T>
+
+  schema: ProtectedSchemaFunction
+
+  live: LiveService
+
+}
+
 // Auth
 
 export type SignInFunction = (email: string, password: string) => Promise<Token>
@@ -281,9 +235,17 @@ export type SignUpFunction = (token: string, user: IUser) => Promise<Token>
 export type CreateInitialAdminFunction = (email: string, password: string) => Promise<Token>
 export type HasInitialAdmin = () => Promise<boolean>
 
+export type Authorization = {
+  User: ProtectedMetaService<IUser>
+  signIn: SignInFunction
+  signUp: SignUpFunction
+  createInitialAdmin: CreateInitialAdminFunction
+  hasInitialAdmin: HasInitialAdmin
+}
+
 // Configuration
 
-export interface JangleConfig {
+export type Config = {
   mongo: {
     content: MongoUri
     live: MongoUri
@@ -292,39 +254,19 @@ export interface JangleConfig {
   secret: string
 }
 
-export class JangleConfigAsUser implements JangleConfig {
-  mongo: {
-    content: MongoUri
-    live: MongoUri
-  }
-  schemas: Dict<Schema>
-  secret: string
-  user: {
-    email: string
-    password: string
-  }
-}
+export type UserConfig = {
+  email: string
+  password: string
+} 
 
 // Return values
 
-export type JangleCore = {
-  services: Dict<Service<IJangleItem>>
-  auth: {
-    User: MetaService<IUser>
-    signIn: SignInFunction
-    signUp: SignUpFunction
-    createInitialAdmin: CreateInitialAdminFunction
-    hasInitialAdmin: HasInitialAdmin
-  }
+export type ProtectedJangleCore = {
+  services: Dict<ProtectedService<IJangleItem>>
+  auth: Authorization
 }
 
-export type JangleCoreAsUser = {
-  services: Dict<AuthenticatedService<IJangleItem>>
-  auth: {
-    User: AuthenticatedMetaService<IUser>
-    signIn: SignInFunction
-    signUp: SignUpFunction
-    createInitialAdmin: CreateInitialAdminFunction
-    hasInitialAdmin: HasInitialAdmin
-  }
+export type JangleCore = {
+  services: Dict<Service<IJangleItem>>
+  auth: Authorization
 }
