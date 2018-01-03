@@ -9,7 +9,8 @@
   "main": "./lib/index.js",
   "types": "./lib/index.d.ts",
   "scripts": {
-    "test": "mocha -r ts-node/register ./src/**/*.spec.ts",
+    "test": "nyc mocha -r ts-node/register ./src/**/*.spec.ts",
+    "coverage": "nyc report --reporter=text-lcov | coveralls",
     "dev": "node_modules/typescript/bin/tsc -w"
   },
   "keywords": [],
@@ -28,7 +29,25 @@
     "@types/mongoose": "^4.7.31",
     "@types/ramda": "^0.25.10",
     "chai": "^4.1.2",
+    "coveralls": "^3.0.0",
     "mocha": "^4.1.0",
+    "nyc": "^11.4.1",
     "ts-node": "^4.1.0"
+  },
+  "nyc": {
+    "extension": [
+      ".ts",
+      ".tsx"
+    ],
+    "exclude": [
+      "lib",
+      "coverage",
+      "src/**/*.spec.ts",
+      "**/*.d.ts"
+    ],
+    "reporter": [
+      "html"
+    ],
+    "all": true  
   }
 }
