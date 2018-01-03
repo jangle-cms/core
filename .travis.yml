@@ -12,4 +12,4 @@ node_js:
   - "8"
 # Report code coverage to coveralls after successful test runs
 after_success:
-  - npm run coveralls
+  - npm run coverage
