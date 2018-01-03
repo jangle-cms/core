@@ -1,4 +1,4 @@
-import { Schema, Types } from "mongoose"
+import { Schema, Types } from 'mongoose'
 
 export default (label: string) : Schema => new Schema({
   by: {

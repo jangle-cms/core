@@ -1,5 +1,5 @@
 import { Schema } from 'mongoose'
-import { Signature, statuses } from '../../types'
+import { statuses } from '../../types'
 import AuthorSignature from './Signature'
 
 export default new Schema({

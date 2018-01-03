@@ -1,23 +1,11 @@
-import { JangleConfig, Dict, IHistory, IUser, MongoUris, IJangleMeta } from '../types'
-import mongoose, { Model, Document, Connection, Schema } from 'mongoose'
+import { Config, Dict, MongoUris, IUserModel, IHistoryModel, Models, UserModels } from '../types'
+import mongoose, { Connection, Schema } from 'mongoose'
 import schemas from './schemas'
 
 mongoose.Promise = global.Promise
 
-interface IUserModel extends IUser, Document {}
-interface IHistoryModel extends IHistory, Document {}
-
 type ModelsContext = {
-  config: JangleConfig
-}
-
-type Models = {
-  content: Dict<Model<Document>>,
-  live: Dict<Model<Document>>,
-  jangle: {
-    User: Model<IUserModel>,
-    History: Model<IHistoryModel>
-  }
+  config: Config
 }
 
 type MongoConnections = {
@@ -25,20 +13,28 @@ type MongoConnections = {
   live: Connection
 }
 
-type ModelPair = {
-  modelName: string
-  content: Model<Document>
-  live: Model<Document>
-}
-
 type InitializeUserModelsContext = {
   userSchemas: Dict<Schema>
   connections: MongoConnections
   Meta: Schema
 }
+
 type InitializeModelConfig = {
-  userSchemas: Dict<Schema>
+  config: Config
   Meta: Schema
+}
+
+type InitializeJangleModelsConfig = {
+  connections: MongoConnections,
+  schemas: {
+    User: Schema,
+    History: Schema
+  }
+}
+
+type JangleModels = {
+  User: IUserModel,
+  History: IHistoryModel
 }
 
 const getConnections = (mongo: MongoUris): MongoConnections => ({
@@ -63,7 +59,7 @@ const getLiveSchema = (schema: Schema): Schema => {
   return schema
 }
 
-const getUserModels = ({ userSchemas, connections, Meta }: InitializeUserModelsContext): ModelPair[] =>
+const getUserModels = ({ userSchemas, connections, Meta }: InitializeUserModelsContext): UserModels =>
   Object.keys(userSchemas)
     .map((modelName) => {
       const schema = userSchemas[modelName]
@@ -77,34 +73,56 @@ const getUserModels = ({ userSchemas, connections, Meta }: InitializeUserModelsC
       }
     })
 
-const initializeUserModels = (pairs: ModelPair[]): Promise<ModelPair[]> =>
+const initializeUserModels = (pairs: UserModels): Promise<UserModels> =>
   Promise.all(pairs.map(pair =>
     Promise.all([
       (pair.content as any).init(),
       (pair.live as any).init()
     ])
-      .then(([ content, live]) => ({
+      .then(([ content, live ]) => ({
         modelName: pair.modelName,
         content,
         live
       }))
   ))
 
-const initializeModels = ({ userSchemas, Meta }: InitializeModelConfig) => (connections: MongoConnections): Models =>
-  Promise.resolve(getUserModels({ userSchemas, connections, Meta }))
-    .then(initializeUserModels)
+const initializeJangleModels = ({ connections, schemas }: InitializeJangleModelsConfig): Promise<JangleModels> =>
+  Promise.resolve({
+    User: connections.content.model('JangleUser', schemas.User),
+    History: connections.content.model('JangleHistory', schemas.History)
+  })
+    .then(({ User, History }) => Promise.all([
+      (User as any).init(),
+      (History as any).init()
+    ]))
+    .then(([ User, History ]) => ({
+      User,
+      History
+    }))
+
+const initializeModels = ({ config, Meta }: InitializeModelConfig) => (connections : MongoConnections): Promise<Models> =>
+  Promise.all([
+    Promise.resolve(getUserModels({ userSchemas: config.schemas, connections, Meta }))
+      .then(initializeUserModels),
+    initializeJangleModels({
+      connections, 
+      schemas: {     
+        User: schemas.User(config.secret),
+        History: schemas.History
+      }
+    })
+  ])
+    .then(([ userModels, jangle ]) => ({
+      secret: config.secret,
+      userModels,
+      jangle
+    }))
 
 export default {
-  initialize: ({ config }: ModelsContext): Models => {
-    Promise.resolve({
-      connections: getConnections(config.mongo),
-      schemas: schemas(config)
-    })
-      .then(({ connections, schemas }) =>
-        initializeModels({
-          userSchemas: config.schemas,
-          Meta: schemas.Meta
-        })
-      )
-  }
+  initialize: ({ config }: ModelsContext): Promise<Models> =>
+    Promise.resolve(getConnections(config.mongo))
+      .then(initializeModels({
+        config,
+        Meta: schemas.Meta
+      }))
 }

@@ -2,6 +2,10 @@
   "name": "jangle-core",
   "version": "1.0.0",
   "description": "",
+  "repository": {
+    "type": "git",
+    "url": "https://www.github.com/jangle-cms/jangle-core.git"
+  },
   "main": "./lib/index.js",
   "types": "./lib/index.d.ts",
   "scripts": {
@@ -12,12 +16,14 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "jsonwebtoken": "^8.1.0",
     "mongoose": "^4.13.8",
-    "ramda": "^0.25.0"
+    "ramda": "^0.25.0",
+    "typescript": "^2.6.2"
   },
   "devDependencies": {
+    "@types/jsonwebtoken": "^7.2.5",
     "@types/mongoose": "^4.7.31",
-    "@types/ramda": "^0.25.10",
-    "typescript": "^2.6.2"
+    "@types/ramda": "^0.25.10"
   }
 }

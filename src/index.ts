@@ -1,66 +1,66 @@
 import { Schema } from 'mongoose'
-import { Dict, JangleConfig, JangleConfigAsUser, JangleCore, JangleCoreAsUser } from './types'
+import { Dict, JangleCore, ProtectedJangleCore, Config, UserConfig } from './types'
+import models from './models'
+import auth from './auth'
+import services from './services'
 
 const isDictOf = (Type: any, thing: Dict<any> | undefined | null): boolean =>
   thing
     ? Object.keys(thing).every(member => thing[member] instanceof Type)
     : false
 
-const parseConfig = (config: JangleConfig, baseConfig: JangleConfig): Promise<JangleConfig> =>
-  Promise.resolve({
-    mongo: {
-      content: config && config.mongo && typeof config.mongo.content === 'string'
-        ? config.mongo.live
-        : baseConfig.mongo.content,
-      live: config && config.mongo && typeof config.mongo.live === 'string'
-        ? config.mongo.live
-        : baseConfig.mongo.live
-    },
-    schemas: config && isDictOf(Schema, config.schemas)
-        ? config.schemas
-        : baseConfig.schemas,
-    secret: config && typeof config.secret === 'string'
-      ? config.secret
-      : baseConfig.secret
-  })
+const parseConfig = (config: Config, baseConfig: Config): Config => ({
+  mongo: {
+    content: config && config.mongo && typeof config.mongo.content === 'string'
+      ? config.mongo.live
+      : baseConfig.mongo.content,
+    live: config && config.mongo && typeof config.mongo.live === 'string'
+      ? config.mongo.live
+      : baseConfig.mongo.live
+  },
+  schemas: config && isDictOf(Schema, config.schemas)
+      ? config.schemas
+      : baseConfig.schemas,
+  secret: config && typeof config.secret === 'string'
+    ? config.secret
+    : baseConfig.secret
+})
 
-const parseConfigAsUser = (config: JangleConfigAsUser, baseConfig: JangleConfig): Promise<JangleConfigAsUser> =>
-  config && config.user && typeof config.user.email === 'string' && typeof config.user.password === 'string'
-    ? parseConfig(config, baseConfig)
-        .then(({ mongo, schemas, secret }) => ({
-          mongo,
-          schemas,
-          secret,
-          user: {
-            email: config.user.email,
-            password: config.user.password
-          }
-        }))
-    : Promise.reject('Must provided a user.')
+const isValidUser = (user: UserConfig): boolean =>
+  user && typeof user.email === 'string' && typeof user.password === 'string'
 
-const baseConfig: JangleConfig = {
+const parseConfigAsUser = (user: UserConfig, config: Config, baseConfig: Config): Promise<Config> =>
+  isValidUser(user)
+    ? Promise.resolve(parseConfig(config, baseConfig))
+    : Promise.reject('Must provide a user.')
+
+const baseConfig: Config = {
   mongo: {
     content: 'mongodb://localhost/jangle',
-    live: 'mongodb://localhost/jangle'
+    live: 'mongodb://localhost/jangle-live'
   },
   schemas: {},
   secret: 'super-secret'
 }
 
+const handleError = (reason: string) =>
+  Promise.reject(reason)
+
 export default {
 
-  start: (config: JangleConfig): Promise<JangleCore> =>
-    parseConfig(config, baseConfig)
+  start: (config: Config): Promise<ProtectedJangleCore> =>
+    Promise.resolve(parseConfig(config, baseConfig))
+      .then(config => ({ config }))
       .then(models.initialize)
-      .then(services.initialize)
       .then(auth.initialize)
-      .catch(handleError),
-
-  startAsUser: (config: JangleConfigAsUser): Promise<JangleCoreAsUser> =>
-    parseConfigAsUser(config, baseConfig)
-      .then(models.initialize)
-      .then(services.initializeAsUser(config ? config.user: undefined))
-      .then(auth.initializeAsUser(config ? config.user: undefined))
+      .then(services.initialize)
       .catch(handleError)
+
+  // startAsUser: (user: UserConfig, config: Config): Promise<JangleCore> =>
+  //   parseConfigAsUser(user, config, baseConfig)
+  //     .then(models.initialize)
+  //     .then(services.initializeAsUser(config ? config.user: undefined))
+  //     .then(auth.initializeAsUser(config ? config.user: undefined))
+  //     .catch(handleError)
 
 }

@@ -1,4 +1,4 @@
-import { Schema, ModelPopulateOptions } from 'mongoose'
+import { Schema, ModelPopulateOptions, Document, Model } from 'mongoose'
 
 // General
 
@@ -76,6 +76,27 @@ export interface IJangleItem {
 
 export interface IItem {
   _id: any
+}
+
+export interface IUserModel extends IUser, Document {}
+export interface IHistoryModel extends IHistory, Document {}
+
+
+export type ModelPair = {
+  modelName: string
+  content: Model<Document>
+  live: Model<Document>
+}
+
+export type UserModels = ModelPair[]
+
+export type Models = {
+  secret: string,
+  userModels: UserModels,
+  jangle: {
+    User: IUserModel,
+    History: IHistoryModel
+  }
 }
 
 // Services
@@ -236,11 +257,26 @@ export type CreateInitialAdminFunction = (email: string, password: string) => Pr
 export type HasInitialAdmin = () => Promise<boolean>
 
 export type Authorization = {
+  User: MetaService<IUser>
+  signIn: SignInFunction
+  signUp: SignUpFunction
+  createInitialAdmin: CreateInitialAdminFunction
+  hasInitialAdmin: HasInitialAdmin
+}
+
+export type ProtectedAuthorization = {
   User: ProtectedMetaService<IUser>
   signIn: SignInFunction
   signUp: SignUpFunction
   createInitialAdmin: CreateInitialAdminFunction
   hasInitialAdmin: HasInitialAdmin
+}
+
+export type Auth = {
+  validate: (token: Token) => Promise<Id>
+  auth: Authorization,
+  userModels: UserModels,
+  History: IHistoryModel
 }
 
 // Configuration
@@ -259,11 +295,18 @@ export type UserConfig = {
   password: string
 } 
 
+// Functions
+export type StartFunction =
+  (config: Config) => Promise<ProtectedJangleCore>
+
+export type StartAsUserFunction =
+  (user: UserConfig, config: Config) => Promise<JangleCore>
+
 // Return values
 
 export type ProtectedJangleCore = {
   services: Dict<ProtectedService<IJangleItem>>
-  auth: Authorization
+  auth: ProtectedAuthorization
 }
 
 export type JangleCore = {

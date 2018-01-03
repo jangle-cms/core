@@ -1,5 +1,5 @@
-import { Schema } from "mongoose";
-import { roles } from "../../types";
+import { Schema } from 'mongoose'
+import { roles } from '../../types'
 import { hash } from '../../utils'
 
 export type User = {
