@@ -19,4 +19,4 @@ More documentation can be found [here](https://www.jangle.io/docs/core/overview)
 
 1. `npm install`
 
-1. `npm run watch`
+1. `npm run dev`

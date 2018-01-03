@@ -1,8 +1,9 @@
 import { Config, Dict, MongoUris, IUserModel, IHistoryModel, Models, UserModels } from '../types'
-import mongoose, { Connection, Schema } from 'mongoose'
+import { Connection, Schema } from 'mongoose'
+import * as mongoose from 'mongoose'
 import schemas from './schemas'
 
-mongoose.Promise = global.Promise
+(mongoose as any).Promise = global.Promise
 
 type ModelsContext = {
   config: Config

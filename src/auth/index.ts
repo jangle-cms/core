@@ -1,5 +1,5 @@
 import { Models, Auth, Token, IUserModel, Id, Authorization } from '../types'
-import jwt from 'jsonwebtoken'
+import * as jwt from 'jsonwebtoken'
 
 type AuthContext = {
   secret: string

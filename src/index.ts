@@ -1,38 +1,8 @@
-import { Schema } from 'mongoose'
-import { Dict, JangleCore, ProtectedJangleCore, Config, UserConfig } from './types'
+import { ProtectedJangleCore, Config } from './types'
 import models from './models'
 import auth from './auth'
 import services from './services'
-
-const isDictOf = (Type: any, thing: Dict<any> | undefined | null): boolean =>
-  thing
-    ? Object.keys(thing).every(member => thing[member] instanceof Type)
-    : false
-
-const parseConfig = (config: Config, baseConfig: Config): Config => ({
-  mongo: {
-    content: config && config.mongo && typeof config.mongo.content === 'string'
-      ? config.mongo.live
-      : baseConfig.mongo.content,
-    live: config && config.mongo && typeof config.mongo.live === 'string'
-      ? config.mongo.live
-      : baseConfig.mongo.live
-  },
-  schemas: config && isDictOf(Schema, config.schemas)
-      ? config.schemas
-      : baseConfig.schemas,
-  secret: config && typeof config.secret === 'string'
-    ? config.secret
-    : baseConfig.secret
-})
-
-const isValidUser = (user: UserConfig): boolean =>
-  user && typeof user.email === 'string' && typeof user.password === 'string'
-
-const parseConfigAsUser = (user: UserConfig, config: Config, baseConfig: Config): Promise<Config> =>
-  isValidUser(user)
-    ? Promise.resolve(parseConfig(config, baseConfig))
-    : Promise.reject('Must provide a user.')
+import { parseConfig } from './utils'
 
 const baseConfig: Config = {
   mongo: {

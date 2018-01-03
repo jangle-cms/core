@@ -1,4 +1,5 @@
-import { Schema, Types } from 'mongoose'
+import { Schema } from 'mongoose'
+const Types = Schema.Types
 
 export default (label: string) : Schema => new Schema({
   by: {
