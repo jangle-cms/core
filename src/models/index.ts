@@ -1,5 +1,5 @@
-import { Config, Dict, MongoUris, IUserModel, IHistoryModel, Models, UserModels } from '../types'
-import { Connection, Schema } from 'mongoose'
+import { Config, Dict, MongoUris, Models, UserModels, IUserDocument, IHistoryDocument } from '../types'
+import { Connection, Schema, Model } from 'mongoose'
 import * as mongoose from 'mongoose'
 import schemas from './schemas'
 
@@ -34,8 +34,8 @@ type InitializeJangleModelsConfig = {
 }
 
 type JangleModels = {
-  User: IUserModel,
-  History: IHistoryModel
+  User: Model<IUserDocument>
+  History: Model<IHistoryDocument>
 }
 
 const getConnections = (mongo: MongoUris): MongoConnections => ({

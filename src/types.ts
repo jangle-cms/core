@@ -78,9 +78,11 @@ export interface IItem {
   _id: any
 }
 
-export interface IUserModel extends IUser, Document {}
-export interface IHistoryModel extends IHistory, Document {}
+export interface IUserDocument extends IUser, Document {}
+export interface IHistoryDocument extends IHistory, Document {}
 
+export type IUserModel = Model<IUserDocument>
+export type IHistoryModel = Model<IHistoryDocument>
 
 export type ModelPair = {
   modelName: string
@@ -90,13 +92,15 @@ export type ModelPair = {
 
 export type UserModels = ModelPair[]
 
+export type MetaModels = {
+  User: IUserModel
+  History: IHistoryModel
+}
+
 export type Models = {
-  secret: string,
-  userModels: UserModels,
-  jangle: {
-    User: IUserModel,
-    History: IHistoryModel
-  }
+  secret: string 
+  userModels: UserModels
+  jangle: MetaModels
 }
 
 // Services
@@ -251,32 +255,29 @@ export type ProtectedService<T> = {
 
 // Auth
 
+export type ValidateFunction = (token: Token) => Promise<Id>
 export type SignInFunction = (email: string, password: string) => Promise<Token>
 export type SignUpFunction = (token: string, user: IUser) => Promise<Token>
 export type CreateInitialAdminFunction = (email: string, password: string) => Promise<Token>
 export type HasInitialAdmin = () => Promise<boolean>
 
 export type Authorization = {
-  User: MetaService<IUser>
   signIn: SignInFunction
-  signUp: SignUpFunction
   createInitialAdmin: CreateInitialAdminFunction
   hasInitialAdmin: HasInitialAdmin
 }
 
 export type ProtectedAuthorization = {
-  User: ProtectedMetaService<IUser>
   signIn: SignInFunction
-  signUp: SignUpFunction
   createInitialAdmin: CreateInitialAdminFunction
   hasInitialAdmin: HasInitialAdmin
 }
 
 export type Auth = {
-  validate: (token: Token) => Promise<Id>
+  validate: ValidateFunction
   auth: Authorization,
   userModels: UserModels,
-  History: IHistoryModel
+  jangle: MetaModels
 }
 
 // Configuration
