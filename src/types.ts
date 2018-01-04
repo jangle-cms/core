@@ -257,17 +257,10 @@ export type ProtectedService<T> = {
 
 export type ValidateFunction = (token: Token) => Promise<Id>
 export type SignInFunction = (email: string, password: string) => Promise<Token>
-export type SignUpFunction = (token: string, user: IUser) => Promise<Token>
 export type CreateInitialAdminFunction = (email: string, password: string) => Promise<Token>
 export type HasInitialAdmin = () => Promise<boolean>
 
 export type Authorization = {
-  signIn: SignInFunction
-  createInitialAdmin: CreateInitialAdminFunction
-  hasInitialAdmin: HasInitialAdmin
-}
-
-export type ProtectedAuthorization = {
   signIn: SignInFunction
   createInitialAdmin: CreateInitialAdminFunction
   hasInitialAdmin: HasInitialAdmin
@@ -307,7 +300,7 @@ export type StartAsUserFunction =
 
 export type ProtectedJangleCore = {
   services: Dict<ProtectedService<IJangleItem>>
-  auth: ProtectedAuthorization
+  auth: Authorization
 }
 
 export type JangleCore = {

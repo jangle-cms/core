@@ -1,5 +1,5 @@
 import * as crypto from 'crypto'
-import { Config, Dict, UserConfig } from './types'
+import { Config, Dict, UserConfig, ProtectedService, Service, Token } from './types'
 import { Schema } from 'mongoose'
 
 export const hash = (secret: string) => (text : string): string =>
@@ -37,3 +37,20 @@ export const parseConfigAsUser = (user: UserConfig, config: Config, baseConfig: 
   isValidUser(user)
     ? Promise.resolve(parseConfig(config, baseConfig))
     : Promise.reject('Must provide a user.')
+
+export const authenticateService = <T>(token: Token, protectedService: ProtectedService<T>): Service<T> =>
+  Object.keys(protectedService)
+    .filter(functionName => functionName !== 'live')
+    .reduce((service: any, functionName) => {
+      service[functionName] = (protectedService as any)[functionName](token)
+      return service
+    }, {
+      live: protectedService.live
+    }) as Service<T>
+
+export const authenticateServices = (token: Token, protectedServices: Dict<ProtectedService<any>>): Dict<Service<any>> =>
+  Object.keys(protectedServices)
+    .reduce((services: Dict<Service<any>>, serviceName) => {
+      services[serviceName] = authenticateService(token, protectedServices[serviceName])
+      return services
+    }, {}) as Dict<Service<any>>

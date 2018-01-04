@@ -1,5 +1,4 @@
 import { Models, Auth, Token, IUserModel, Id, Authorization, IUserDocument } from '../types'
-import { Model } from 'mongoose'
 import * as jwt from 'jsonwebtoken'
 import { hash } from '../utils'
 
@@ -34,7 +33,7 @@ const makeValidate = ({ secret, User }: AuthContext) => (token: Token): Promise<
     .then(checkUserIdFromToken(User))
     .catch(Promise.reject)
 
-const hasInitialAdmin = (User: IUserModel)=> () : Promise<boolean> =>
+const makeHasInitialAdmin = (User: IUserModel)=> () : Promise<boolean> =>
   User.count({ role: 'admin' })
     .exec()
     .then(count => count > 0)
@@ -47,8 +46,8 @@ const createAdminUser = (User: IUserModel, email: string, password: string): Pro
       return Promise.reject('Could not create admin user.')
     })
 
-const createInitialAdmin = ({ secret, User }: AuthContext) => (email: string, password: string): Promise<Token> =>
-  hasInitialAdmin(User)()
+const makeCreateInitialAdmin = ({ secret, User }: AuthContext) => (email: string, password: string): Promise<Token> =>
+  makeHasInitialAdmin(User)()
     .then(hasAdminAlready => hasAdminAlready
       ? Promise.reject('Admin user already exists.')
       : createAdminUser(User, email, password)
@@ -56,7 +55,7 @@ const createInitialAdmin = ({ secret, User }: AuthContext) => (email: string, pa
     .then(({ _id }) => generateToken(secret, _id))
     .catch(Promise.reject)
 
-const signIn = ({ secret, User }: AuthContext) => (email: string, password: string): Promise<Token> =>
+const makeSignIn = ({ secret, User }: AuthContext) => (email: string, password: string): Promise<Token> =>
   User.findOne({ email, password: hash(secret)(password) })
     .lean()
     .exec()
@@ -70,9 +69,9 @@ const signIn = ({ secret, User }: AuthContext) => (email: string, password: stri
     })
 
 const makeAuthorization = (context: AuthContext): Authorization => ({
-  signIn: signIn(context),
-  createInitialAdmin: createInitialAdmin(context),
-  hasInitialAdmin: hasInitialAdmin(context.User)
+  signIn: makeSignIn(context),
+  createInitialAdmin: makeCreateInitialAdmin(context),
+  hasInitialAdmin: makeHasInitialAdmin(context.User)
 })
 
 const initialize = ({ secret, userModels, jangle: { User }, jangle }: Models): Promise<Auth> =>
