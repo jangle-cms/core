@@ -1,5 +1,5 @@
 import * as crypto from 'crypto'
-import { Config, Dict, UserConfig, ProtectedService, Service, Token } from './types'
+import { Config, Dict, UserConfig, ProtectedService, Service, Token, ProtectedJangleCore, JangleCore } from './types'
 import { Schema } from 'mongoose'
 
 export const hash = (secret: string) => (text : string): string =>
@@ -54,3 +54,15 @@ export const authenticateServices = (token: Token, protectedServices: Dict<Prote
       services[serviceName] = authenticateService(token, protectedServices[serviceName])
       return services
     }, {}) as Dict<Service<any>>
+
+export const authenticateCore = ({ email, password }: UserConfig) => ({ auth, services }: ProtectedJangleCore): Promise<JangleCore> =>
+  auth.hasInitialAdmin()
+    .then(hasInitialAdmin => hasInitialAdmin
+      ? auth.signIn(email, password)
+      : auth.createInitialAdmin(email, password)
+    )
+    .then(token => ({
+      auth: auth,
+      services: authenticateServices(token, services)
+    }))
+    .catch(Promise.reject)
