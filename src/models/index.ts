@@ -1,4 +1,4 @@
-import { Config, Dict, MongoUris, Models, UserModels, IUserDocument, IHistoryDocument } from '../types'
+import { Config, Dict, MongoUris, Models, UserModels, IUserDocument, IHistoryDocument, MetaModels } from '../types'
 import { Connection, Schema, Model } from 'mongoose'
 import * as mongoose from 'mongoose'
 import schemas from './schemas'
@@ -31,11 +31,6 @@ type InitializeJangleModelsConfig = {
     User: Schema,
     History: Schema
   }
-}
-
-type JangleModels = {
-  User: Model<IUserDocument>
-  History: Model<IHistoryDocument>
 }
 
 const getConnections = (mongo: MongoUris): MongoConnections => ({
@@ -87,15 +82,11 @@ const initializeUserModels = (pairs: UserModels): Promise<UserModels> =>
       }))
   ))
 
-const initializeJangleModels = ({ connections, schemas }: InitializeJangleModelsConfig): Promise<JangleModels> =>
-  Promise.resolve({
-    User: connections.content.model('JangleUser', schemas.User),
-    History: connections.content.model('JangleHistory', schemas.History)
-  })
-    .then(({ User, History }) => Promise.all([
-      (User as any).init(),
-      (History as any).init()
-    ]))
+const initializeJangleModels = ({ connections, schemas }: InitializeJangleModelsConfig): Promise<MetaModels> =>
+  Promise.all([
+    (connections.content.model('JangleUser', schemas.User) as any).init(),
+    (connections.content.model('JangleHistory', schemas.History) as any).init()
+  ])
     .then(([ User, History ]) => ({
       User,
       History
