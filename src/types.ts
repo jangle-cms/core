@@ -74,6 +74,10 @@ export interface IJangleItem {
   jangle: IJangleMeta
 }
 
+export interface IJangleItemInput {
+  jangle: IJangleMeta
+}
+
 export interface IItem {
   _id: any
 }
@@ -84,23 +88,23 @@ export interface IHistoryDocument extends IHistory, Document {}
 export type IUserModel = Model<IUserDocument>
 export type IHistoryModel = Model<IHistoryDocument>
 
-export type ModelPair = {
+export type UserModel = {
   modelName: string
   content: Model<Document>
   live: Model<Document>
+  history: IHistoryModel
 }
 
-export type UserModels = ModelPair[]
+export type UserModels = UserModel[]
 
 export type MetaModels = {
   User: IUserModel
-  History: IHistoryModel
 }
 
 export type Models = {
   secret: string 
   userModels: UserModels
-  jangle: MetaModels
+  jangleModels: MetaModels
 }
 
 // Services
@@ -270,7 +274,7 @@ export type Auth = {
   validate: ValidateFunction
   auth: Authorization,
   userModels: UserModels,
-  jangle: MetaModels
+  jangleModels: MetaModels
 }
 
 // Configuration

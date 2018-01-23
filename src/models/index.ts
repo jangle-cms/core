@@ -1,5 +1,5 @@
-import { Config, Dict, MongoUris, Models, UserModels, IUserDocument, IHistoryDocument, MetaModels } from '../types'
-import { Connection, Schema, Model } from 'mongoose'
+import { Config, Dict, MongoUris, Models, UserModels, MetaModels } from '../types'
+import { Connection, Schema } from 'mongoose'
 import * as mongoose from 'mongoose'
 import schemas from './schemas'
 
@@ -65,31 +65,32 @@ const getUserModels = ({ userSchemas, connections, Meta }: InitializeUserModelsC
       return {
         modelName,
         content: connections.content.model(modelName, contentSchema),
-        live: connections.live.model(modelName, liveSchema)
+        live: connections.live.model(modelName, liveSchema),
+        history: connections.content.model(`JangleHistory${modelName}`, schemas.History) as any
       }
     })
 
-const initializeUserModels = (pairs: UserModels): Promise<UserModels> =>
-  Promise.all(pairs.map(pair =>
+const initializeUserModels = (userModels: UserModels): Promise<UserModels> =>
+  Promise.all(userModels.map(userModel =>
     Promise.all([
-      (pair.content as any).init(),
-      (pair.live as any).init()
+      (userModel.content as any).init(),
+      (userModel.live as any).init(),
+      (userModel.history as any).init()
     ])
-      .then(([ content, live ]) => ({
-        modelName: pair.modelName,
+      .then(([ content, live, history ]) => ({
+        modelName: userModel.modelName,
         content,
-        live
+        live,
+        history
       }))
   ))
 
 const initializeJangleModels = ({ connections, schemas }: InitializeJangleModelsConfig): Promise<MetaModels> =>
   Promise.all([
-    (connections.content.model('JangleUser', schemas.User) as any).init(),
-    (connections.content.model('JangleHistory', schemas.History) as any).init()
+    (connections.content.model('JangleUser', schemas.User) as any).init()
   ])
-    .then(([ User, History ]) => ({
-      User,
-      History
+    .then(([ User ]) => ({
+      User
     }))
 
 const initializeModels = ({ config, Meta }: InitializeModelConfig) => (connections : MongoConnections): Promise<Models> =>
@@ -104,17 +105,14 @@ const initializeModels = ({ config, Meta }: InitializeModelConfig) => (connectio
       }
     })
   ])
-    .then(([ userModels, jangle ]) => ({
+    .then(([ userModels, jangleModels ]) => ({
       secret: config.secret,
       userModels,
-      jangle
+      jangleModels
     }))
 
 export default {
   initialize: ({ config }: ModelsContext): Promise<Models> =>
     Promise.resolve(getConnections(config.mongo))
-      .then(initializeModels({
-        config,
-        Meta: schemas.Meta
-      }))
+      .then( initializeModels({ config, Meta: schemas.Meta }) )
 }

@@ -40,7 +40,7 @@ const makeHasInitialAdmin = (User: IUserModel)=> () : Promise<boolean> =>
     .catch(Promise.reject)
 
 const createAdminUser = (User: IUserModel, email: string, password: string): Promise<IUserDocument> => 
-  User.create({ email, password })
+  User.create({ email, password, role: 'admin' })
     .catch(reason => {
       console.error('createAdminUser', reason)
       return Promise.reject('Could not create admin user.')
@@ -74,12 +74,12 @@ const makeAuthorization = (context: AuthContext): Authorization => ({
   hasInitialAdmin: makeHasInitialAdmin(context.User)
 })
 
-const initialize = ({ secret, userModels, jangle: { User }, jangle }: Models): Promise<Auth> =>
+const initialize = ({ secret, userModels, jangleModels: { User }, jangleModels }: Models): Promise<Auth> =>
   Promise.resolve({
     validate: makeValidate({ secret, User }),
     auth: makeAuthorization({ secret, User }),
     userModels,
-    jangle
+    jangleModels
   })
 
 export default {
