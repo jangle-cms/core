@@ -3,6 +3,7 @@ import {
   UserModels, ValidateFunction,
   MetaModels, ProtectedService, IJangleItem, Dict, UserModel, Token, AnyParams, ProtectedAnyFunction, CountParams, FindParams, GetParams, Id, IJangleItemInput, Signature, Status, IHistoryDocument
 } from '../types'
+import { reject, debug } from '../utils'
 import * as R from 'ramda'
 import { Model, Document } from 'mongoose'
 
@@ -15,7 +16,7 @@ type InitializeServicesConfig = {
 type Service = ProtectedService<IJangleItem>
 type Services = Dict<Service>
 
-const initializeServices = ({ userModels, validate, jangleModels }: InitializeServicesConfig): Services =>
+const initializeServices = ({ userModels, validate }: InitializeServicesConfig): Services =>
   userModels.reduce((services: Services, userModel) => {
     services[userModel.modelName] = initializeService(validate, userModel)
     return services
@@ -26,12 +27,14 @@ const makeAny = ({ model } : { model: Model<Document> }) => (params?: AnyParams)
     .lean()
     .exec()
     .then((count: any) => count > 0)
+    .catch(reject)
 
 const makeCount = ({ model } : { model: Model<Document> }) => (params?: CountParams): Promise<number> =>
   model.count(params && params.where ? params.where : {})
     .lean()
     .exec()
     .then((count: any) => count)
+    .catch(reject)
 
 const makeFind = ({ model } : { model: Model<Document> }) => (params?: FindParams): Promise<IJangleItem[]> =>
   model.find()
@@ -42,14 +45,16 @@ const makeFind = ({ model } : { model: Model<Document> }) => (params?: FindParam
     .select(params && params.select ? params.select : undefined as any)
     .sort(params && params.sort ? params.sort : undefined as any)
     .lean()
-    .exec() as any
+    .exec()
+    .catch(reject) as any
 
 const makeGet = ({ model } : { model: Model<Document> }) => (_id: Id, params?: GetParams): Promise<IJangleItem> =>
   model.findOne({ _id })
     .populate(params && params.populate ? params.populate : undefined as any)
     .select(params && params.select ? params.select : undefined as any)
     .lean()
-    .exec() as any
+    .exec()
+    .catch(reject) as any
 
 const stamp = (id: Id): Signature => ({
   by: id,
@@ -117,7 +122,8 @@ const createHistoryItem = ({ history }: HistoryContext, oldItem: IJangleItem) =>
     updated: oldItem.jangle.updated,
     changes: makeHistoryItem(oldItem, newItem)
   })
-  .then((_historyItem: any) => newItem) as any
+  .then((_historyItem: any) => newItem)
+  .catch(reject) as any
 
 const makeUpdateFunction = ({ overwrite, status }: UpdateConfig) => ({ content, history }: HistoryContext, userId: Id, id: Id, newItem: object): Promise<IJangleItem> =>
   content.findById(id)
@@ -134,8 +140,10 @@ const makeUpdateFunction = ({ overwrite, status }: UpdateConfig) => ({ content, 
       )
       .lean()
       .exec()
-      .then(createHistoryItem({ history, content }, oldItem)) as any
-    ) as any
+      .then(createHistoryItem({ history, content }, oldItem))
+      .catch(reject)
+    )
+    .catch(reject) as any
 
 const makeUpdate = makeUpdateFunction({ overwrite: true })
 const makePatch = makeUpdateFunction({ overwrite: true })
@@ -151,6 +159,7 @@ const makeIsLive = ({ live }: PublishContext, id: Id): Promise<boolean> =>
     .lean()
     .exec()
     .then((count : any) => count > 0)
+    .catch(reject)
 
 const stripJangleMeta = (doc: any): any => ({
   ...doc,
@@ -162,17 +171,20 @@ const makePublish = ({ content, live }: PublishContext, id: Id): Promise<IJangle
     .lean()
     .exec()
     .then(stripJangleMeta)
-    .then(live.create) as any
+    .then(live.create)
+    .catch(reject) as any
 
 const makeUnpublish = ({ live }: PublishContext, id: Id): Promise<IJangleItem> =>
   live.findByIdAndRemove(id)
     .lean()
-    .exec() as any
+    .exec()
+    .catch(reject) as any
 
 const makeHistory = ({ history }: HistoryContext, id: Id): Promise<IHistoryDocument[]> =>
   history.find({ itemId: id })
     .lean()
-    .exec() as any
+    .exec()
+    .catch(reject) as any
 
 const buildOldItem = ([ historyItems, currentItem ]: any): Promise<any> =>
   historyItems.reduce((item: any, { changes }: any) => {
@@ -195,7 +207,9 @@ const makeHistoryPreview = ({ history, content }: HistoryContext, id: Id, versio
       .lean()
       .exec(),
     content.findById(id).lean().exec()
-  ]).then(buildOldItem) as any
+  ])
+    .then(buildOldItem)
+    .catch(reject) as any
 
 const makeSchema = (content: Model<Document>) =>
   content.schema as any
@@ -240,11 +254,11 @@ const initialize = ({ auth, userModels, validate, jangleModels }: Auth): Promise
     Promise.resolve(auth),
     initializeServices({ userModels, validate, jangleModels })
   ])
-    .then(([auth, services]) => ({
+    .then(([ auth, services ]) => ({
       auth,
       services
     }))
-    .catch(Promise.reject)
+    .catch(reject)
 
 export default {
   initialize

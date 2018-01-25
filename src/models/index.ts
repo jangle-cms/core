@@ -2,6 +2,7 @@ import { Config, Dict, MongoUris, Models, UserModels, MetaModels } from '../type
 import { Connection, Schema } from 'mongoose'
 import * as mongoose from 'mongoose'
 import schemas from './schemas'
+import { reject, debug } from '../utils'
 
 (mongoose as any).Promise = global.Promise
 
@@ -59,7 +60,7 @@ const getUserModels = ({ userSchemas, connections, Meta }: InitializeUserModelsC
   Object.keys(userSchemas)
     .map((modelName) => {
       const schema = userSchemas[modelName]
-      const contentSchema = getContentSchema(Meta, (schema as any).clone())
+      const contentSchema = debug(getContentSchema(Meta, (schema as any).clone()))
       const liveSchema = getLiveSchema((schema as any).clone())
 
       return {
@@ -83,6 +84,7 @@ const initializeUserModels = (userModels: UserModels): Promise<UserModels> =>
         live,
         history
       }))
+      .catch(reject)
   ))
 
 const initializeJangleModels = ({ connections, schemas }: InitializeJangleModelsConfig): Promise<MetaModels> =>
@@ -92,11 +94,15 @@ const initializeJangleModels = ({ connections, schemas }: InitializeJangleModels
     .then(([ User ]) => ({
       User
     }))
+    .catch(reject)
 
 const initializeModels = ({ config, Meta }: InitializeModelConfig) => (connections : MongoConnections): Promise<Models> =>
   Promise.all([
-    Promise.resolve(getUserModels({ userSchemas: config.schemas, connections, Meta }))
-      .then(initializeUserModels),
+    Promise.resolve(
+      getUserModels({ userSchemas: config.schemas, connections, Meta })
+    )
+      .then(initializeUserModels)
+      .catch(reject),
     initializeJangleModels({
       connections, 
       schemas: {     
@@ -110,9 +116,11 @@ const initializeModels = ({ config, Meta }: InitializeModelConfig) => (connectio
       userModels,
       jangleModels
     }))
+    .catch(reject)
 
 export default {
   initialize: ({ config }: ModelsContext): Promise<Models> =>
     Promise.resolve(getConnections(config.mongo))
       .then( initializeModels({ config, Meta: schemas.Meta }) )
+      .catch(reject)
 }

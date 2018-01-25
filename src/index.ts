@@ -1,5 +1,5 @@
 import { ProtectedJangleCore, Config, UserConfig, JangleCore } from './types'
-import { parseConfig, parseConfigAsUser, authenticateCore } from './utils'
+import { parseConfig, parseConfigAsUser, authenticateCore, reject } from './utils'
 import models from './models'
 import auth from './auth'
 import services from './services'
@@ -14,18 +14,18 @@ export const baseConfig: Config = {
 }
 
 export const start = (config: Config): Promise<ProtectedJangleCore> =>
-  Promise.resolve(parseConfig(config, baseConfig))
+  parseConfig(config, baseConfig)
     .then(config => ({ config }))
     .then(models.initialize)
     .then(auth.initialize)
     .then(services.initialize)
-    .catch(Promise.reject)
+    .catch(reject)
 
 export const startAsUser = (user: UserConfig, config: Config): Promise<JangleCore> =>
   parseConfigAsUser(user, config, baseConfig)  
     .then(start)
     .then(authenticateCore(user))
-    .catch(Promise.reject)
+    .catch(reject)
 
 export default {
   start,

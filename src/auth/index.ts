@@ -1,21 +1,21 @@
 import { Models, Auth, Token, IUserModel, Id, Authorization, IUserDocument } from '../types'
 import * as jwt from 'jsonwebtoken'
-import { hash } from '../utils'
+import { hash, reject } from '../utils'
 
 type AuthContext = {
   secret: string
   User: IUserModel
 }
 
-const generateToken = (secret: string, value: string): Token =>
-  jwt.sign(value, secret)
+const generateToken = (secret: string, payload: object): Token =>
+  jwt.sign(payload, secret)
 
 const decodeToken = (secret: string, token: string): Promise<Id> =>
   new Promise((resolve, reject) =>
-    jwt.verify(token, secret, (err, id) =>
-      (err || id == null)
+    jwt.verify(token, secret, (err, payload : any) =>
+      (err || payload == null || payload.id == null)
         ? reject('Token is invalid.')
-        : resolve(id)
+        : resolve(payload.id)
     )
   )
 
@@ -26,18 +26,18 @@ const checkUserIdFromToken = (User: IUserModel) => (id: Id): Promise<Id> =>
       ? id
       : Promise.reject('No user matches that token.')
     )
-    .catch(Promise.reject)
+    .catch(reject)
 
 const makeValidate = ({ secret, User }: AuthContext) => (token: Token): Promise<Id> =>
   decodeToken(secret, token)
     .then(checkUserIdFromToken(User))
-    .catch(Promise.reject)
+    .catch(reject)
 
 const makeHasInitialAdmin = (User: IUserModel)=> () : Promise<boolean> =>
   User.count({ role: 'admin' })
     .exec()
     .then(count => count > 0)
-    .catch(Promise.reject)
+    .catch(reject)
 
 const createAdminUser = (User: IUserModel, email: string, password: string): Promise<IUserDocument> => 
   User.create({ email, password, role: 'admin' })
@@ -52,21 +52,18 @@ const makeCreateInitialAdmin = ({ secret, User }: AuthContext) => (email: string
       ? Promise.reject('Admin user already exists.')
       : createAdminUser(User, email, password)
     )
-    .then(({ _id }) => generateToken(secret, _id))
-    .catch(Promise.reject)
+    .then(({ _id }) => generateToken(secret, { id: _id }))
+    .catch(reject)
 
 const makeSignIn = ({ secret, User }: AuthContext) => (email: string, password: string): Promise<Token> =>
   User.findOne({ email, password: hash(secret)(password) })
     .lean()
     .exec()
     .then((user : any) => user
-      ? generateToken(secret, user._id) as any
+      ? generateToken(secret, { id: user._id }) as any
       : Promise.reject('Failed to sign in.')
     )
-    .catch(reason => {
-      console.error('signIn')
-      Promise.reject(reason)
-    })
+    .catch(reject)
 
 const makeAuthorization = (context: AuthContext): Authorization => ({
   signIn: makeSignIn(context),
