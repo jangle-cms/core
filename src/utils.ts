@@ -57,13 +57,34 @@ export const parseConfig = (config: Config, baseConfig: Config): Promise<Config>
       : baseConfig.secret
   })
 
-export const isValidUser = (user: UserConfig): boolean =>
-  user != null && typeof user.email === 'string' && typeof user.password === 'string'
+export const invalidUserErrors = {
+  noUserProvided: 'No user was provided.',
+  notAnObject: 'A user should be an object, with both an `email` and `password`.',
+  missingEmail: 'A user should have an `email` field.',
+  invalidEmail: 'The user\'s `email` should be a string.',
+  missingPassword: 'A user should have an `password` field.',
+  invalidPassword: 'The user\'s `password` should be a string.'
+}
+
+export const isValidUser = (user: UserConfig): Promise<UserConfig> =>
+  user == null
+    ? Promise.reject(invalidUserErrors.noUserProvided)
+  : user instanceof Array || typeof user !== 'object'
+    ? Promise.reject(invalidUserErrors.notAnObject)
+  : user.email == null
+    ? Promise.reject(invalidUserErrors.missingEmail)
+  : user.password == null
+    ? Promise.reject(invalidUserErrors.missingPassword)
+  : typeof user.email !== 'string'
+    ? Promise.reject(invalidUserErrors.invalidEmail)
+  : typeof user.password !== 'string'
+    ? Promise.reject(invalidUserErrors.invalidPassword)
+  : Promise.resolve(user)
 
 export const parseConfigAsUser = (user: UserConfig, config: Config, baseConfig: Config): Promise<Config> =>
   isValidUser(user)
-    ? parseConfig(config, baseConfig)
-    : Promise.reject('Must provide a user.')
+    .then(_ => parseConfig(config, baseConfig))
+    .catch(reject)
 
 export const authenticateService = <T>(token: Token, protectedService: ProtectedService<T>): Service<T> =>
   Object.keys(protectedService)

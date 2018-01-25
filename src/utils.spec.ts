@@ -1,4 +1,4 @@
-import { debug, hash, isDictOf, parseConfigErrors, parseConfig, isValidUser, parseConfigAsUser } from './utils'
+import { debug, hash, isDictOf, parseConfigErrors, parseConfig, isValidUser, parseConfigAsUser, invalidUserErrors } from './utils'
 import { expect } from 'chai'
 import 'mocha'
 import { Config } from './types'
@@ -81,19 +81,53 @@ describe('utils', () => {
     })
   })
 
+  const baseConfig : Config = {
+    mongo: {
+      content: 'mongodb://base',
+      live: 'mongodb://base-live'
+    },
+    schemas: {},
+    secret: 'default-secret'
+  }
+
+  const startsWith = (prefix, str) =>
+    typeof str === 'string' && str.indexOf(prefix) === 0
+
+  const isValidConfig = (config) =>
+    (config && typeof config === 'object' &&
+    config.mongo &&
+    startsWith('mongodb://', config.mongo.content) &&
+    startsWith('mongodb://', config.mongo.live) &&
+    config.schemas && isDictOf(Schema, config.schemas) &&
+    typeof config.secret === 'string') || false
+
+  const exampleConfigs = {
+    'the base config': {
+      config: baseConfig,
+      expectation: true
+    },
+    'undefined': {
+      config: undefined,
+      expectation: false
+    },
+    'an empty object': {
+      config: {},
+      expectation: false
+    }
+  }
+
+  // isValidConfig
+  describe('isValidConfig', () => {
+    Object.keys(exampleConfigs).map((key) => {
+      const value = exampleConfigs[key]
+      it(`isValidConfig ${value.expectation ? 'works' : 'breaks' } for ${key}`, () => {
+        expect(isValidConfig(value.config)).to.equal(value.expectation)
+      })
+    })
+  })
+
   // Parse Config
   describe('parseConfig', () => {
-
-    const startsWith = (prefix, str) =>
-      typeof str === 'string' && str.indexOf(prefix) === 0
-
-    const isValidConfig = (config) =>
-      (config && typeof config === 'object' &&
-      config.mongo &&
-      startsWith('mongodb://', config.mongo.content) &&
-      startsWith('mongodb://', config.mongo.live) &&
-      config.schemas && isDictOf(Schema, config.schemas) &&
-      typeof config.secret === 'string') || false
 
     const willHaveValidConfig = (config) =>
       parseConfig(config, baseConfig)
@@ -103,15 +137,6 @@ describe('utils', () => {
       parseConfig(config, baseConfig)
         .then(_ => 'Bad configuration succeeded...')
         .catch(reason => reason)
-
-    const baseConfig : Config = {
-      mongo: {
-        content: 'mongodb://base',
-        live: 'mongodb://base-live'
-      },
-      schemas: {},
-      secret: 'default-secret'
-    }
 
     const shouldFailWithError = {
 
@@ -238,28 +263,6 @@ describe('utils', () => {
 
     }
 
-    const exampleConfigs = {
-      'the base config': {
-        config: baseConfig,
-        expectation: true
-      },
-      'undefined': {
-        config: undefined,
-        expectation: false
-      },
-      'an empty object': {
-        config: {},
-        expectation: false
-      }
-    }
-
-    Object.keys(exampleConfigs).map((key) => {
-      const value = exampleConfigs[key]
-      it(`isValidConfig ${value.expectation ? 'works' : 'breaks' } for ${key}`, () => {
-        expect(isValidConfig(value.config)).to.equal(value.expectation)
-      })
-    })
-
     Object.keys(shouldFailWithError).map((key) => {
       const value = shouldFailWithError[key]
       it(`provides correct error message for ${key}`, () =>
@@ -276,37 +279,88 @@ describe('utils', () => {
       )
     })
 
-    // it('works for valid configs', (done) =>
-    //   Promise.all(
-    //     Object.keys(shouldPass).map(key => willHaveValidConfig(shouldPass[key]))
-    //   )
-    //     .then(results =>
-    //       results.forEach(result => expect(result).to.be.true)
-    //     )
-    //     .then(done)
-    //     .catch(done)
-    // )
+  })
+
+  const badUsers = {
+    'null': {
+      user: null,
+      error: invalidUserErrors.noUserProvided
+    },
+    'undefined': {
+      user: undefined,
+      error: invalidUserErrors.noUserProvided
+    },
+    'an string': {
+      user: 'pete',
+      error: invalidUserErrors.notAnObject
+    },
+    'an number': {
+      user: 1234,
+      error: invalidUserErrors.notAnObject
+    },
+    'an array': {
+      user: [],
+      error: invalidUserErrors.notAnObject
+    },
+    'an empty object': {
+      user: {},
+      error: invalidUserErrors.missingEmail
+    },
+    'a missing email': {
+      user: { password: '' },
+      error: invalidUserErrors.missingEmail
+    },
+    'a missing password': {
+      user: { email: '' },
+      error: invalidUserErrors.missingPassword
+    },
+    'an invalid email': {
+      user: { email: 123, password: '' },
+      error: invalidUserErrors.invalidEmail
+    },
+    'an invalid password': {
+      user: { email: '', password: 123 },
+      error: invalidUserErrors.invalidPassword
+    }
+  }
+
+  // isValidUser
+  describe('isValidUser', () => {
+
+    it('accepts a valid user', () =>
+      isValidUser({
+        email: 'ryan@jangle.com',
+        password: 'password'
+      }).then(user => expect(user).to.exist)
+    )
+
+    Object.keys(badUsers).map(key => {
+      const value = badUsers[key]
+      it(`provides correct error given ${key}`, () =>
+        isValidUser(value.user)
+          .catch(error => expect(error).to.equal(value.error))
+      )
+    })
 
   })
 
+  // isValidUser
   describe('isValidUser', () => {
 
-    it('is defined', () => expect(isValidUser).to.exist)
+    it('returns a valid config, given a user', () =>
+      parseConfigAsUser(
+        { email: 'ryan@jangle.com', password: 'password' },
+        undefined,
+        baseConfig
+      ).then(config => expect(isValidConfig(config)).to.be.true)
+    )
 
-    it('accepts valid users', () => {
-      expect(isValidUser({
-        email: 'ryan@jangle.com',
-        password: 'password'
-      })).to.be.true
-    })
-
-    it('rejects invalid users', () => {
-      expect(isValidUser(null as any)).to.be.false
-      expect(isValidUser(undefined as any)).to.be.false
-      expect(isValidUser({ email: 'ryan@jangle.com', password: undefined } as any)).to.be.false
-      expect(isValidUser({ email: undefined, password: 'password' } as any)).to.be.false
-      expect(isValidUser({} as any)).to.be.false
-      expect(isValidUser({ email: 'poop input', password: 123 } as any)).to.be.false
+    Object.keys(badUsers).map(key => {
+      const value = badUsers[key]
+      it(`provides correct error, given user ${key}`, () =>
+        parseConfigAsUser(value.user, undefined, baseConfig)
+          .catch(error => expect(error).to.equal(value.error))
+      )
     })
 
   })
