@@ -1,4 +1,4 @@
-import { Schema, ModelPopulateOptions, Document, Model } from 'mongoose'
+import { Schema, ModelPopulateOptions, Document, Model, Mongoose, Connection } from 'mongoose'
 
 // General
 
@@ -292,6 +292,43 @@ export type UserConfig = {
   email: string
   password: string
 } 
+
+// Models Module
+export type ModelsNodeContext = {
+  mongoose: Mongoose
+}
+
+export type ModelsContext = {
+  config: Config
+}
+
+export type MongoConnections = {
+  content: Connection
+  live: Connection
+}
+
+export type InitializeUserModelsContext = {
+  userSchemas: Dict<Schema>
+  connections: MongoConnections
+  Meta: Schema
+}
+
+export type InitializeModelConfig = {
+  config: Config
+  Meta: Schema
+}
+
+export type InitializeJangleModelsConfig = {
+  connections: MongoConnections,
+  schemas: {
+    User: Schema,
+    History: Schema
+  }
+}
+
+export type Schema = Schema
+export type Model<T extends Document> = Model<T>
+export type Document = Document
 
 // Functions
 export type StartFunction =

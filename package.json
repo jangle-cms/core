@@ -18,7 +18,7 @@
   "license": "ISC",
   "dependencies": {
     "jsonwebtoken": "^8.1.0",
-    "mongoose": "^4.13.8",
+    "mongoose": "^5.0.1",
     "ramda": "^0.25.0",
     "typescript": "^2.6.2"
   },
@@ -26,8 +26,8 @@
     "@types/chai": "^4.0.10",
     "@types/jsonwebtoken": "^7.2.5",
     "@types/mocha": "^2.2.45",
-    "@types/mongoose": "^4.7.31",
-    "@types/ramda": "^0.25.10",
+    "@types/mongoose": "^4.7.33",
+    "@types/ramda": "^0.25.16",
     "chai": "^4.1.2",
     "coveralls": "^3.0.0",
     "mocha": "^4.1.0",
@@ -48,6 +48,6 @@
     "reporter": [
       "html"
     ],
-    "all": true  
+    "all": true
   }
 }

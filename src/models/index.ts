@@ -1,126 +1,99 @@
-import { Config, Dict, MongoUris, Models, UserModels, MetaModels } from '../types'
-import { Connection, Schema } from 'mongoose'
-import * as mongoose from 'mongoose'
+import { Config, Dict, MongoUris, Models, UserModels, MetaModels, ModelsNodeContext, MongoConnections, InitializeUserModelsContext, InitializeJangleModelsConfig, InitializeModelConfig, ModelsContext, Schema } from '../types'
 import schemas from './schemas'
 import { reject, debug } from '../utils'
 
-(mongoose as any).Promise = global.Promise
+const initialize = ({ mongoose }: ModelsNodeContext) => {
 
-type ModelsContext = {
-  config: Config
-}
-
-type MongoConnections = {
-  content: Connection
-  live: Connection
-}
-
-type InitializeUserModelsContext = {
-  userSchemas: Dict<Schema>
-  connections: MongoConnections
-  Meta: Schema
-}
-
-type InitializeModelConfig = {
-  config: Config
-  Meta: Schema
-}
-
-type InitializeJangleModelsConfig = {
-  connections: MongoConnections,
-  schemas: {
-    User: Schema,
-    History: Schema
-  }
-}
-
-const getConnections = (mongo: MongoUris): MongoConnections => ({
-  content: mongoose.createConnection(mongo.content),
-  live:  mongoose.createConnection(mongo.live)
-})
-
-const getContentSchema = (Meta: Schema, schema: Schema): Schema => {
-  schema.add({
-    jangle: {
-      type: Meta,
-      required: [ true, 'User-defined models require Jangle meta.' ]
-    }
+  const getConnections = (mongo: MongoUris): MongoConnections => ({
+    content: mongoose.createConnection(mongo.content),
+    live:  mongoose.createConnection(mongo.live)
   })
 
-  schema.set('versionKey', false)
-  return schema
-}
-
-const getLiveSchema = (schema: Schema): Schema => {
-  schema.set('versionKey', false)
-  return schema
-}
-
-const getUserModels = ({ userSchemas, connections, Meta }: InitializeUserModelsContext): UserModels =>
-  Object.keys(userSchemas)
-    .map((modelName) => {
-      const schema = userSchemas[modelName]
-      const contentSchema = debug(getContentSchema(Meta, (schema as any).clone()))
-      const liveSchema = getLiveSchema((schema as any).clone())
-
-      return {
-        modelName,
-        content: connections.content.model(modelName, contentSchema),
-        live: connections.live.model(modelName, liveSchema),
-        history: connections.content.model(`JangleHistory${modelName}`, schemas.History) as any
+  const getContentSchema = (Meta: Schema, schema: Schema): Schema => {
+    schema.add({
+      jangle: {
+        type: Meta,
+        required: [ true, 'User-defined models require Jangle meta.' ]
       }
     })
 
-const initializeUserModels = (userModels: UserModels): Promise<UserModels> =>
-  Promise.all(userModels.map(userModel =>
+    schema.set('versionKey', false)
+    return schema
+  }
+
+  const getLiveSchema = (schema: Schema): Schema => {
+    schema.set('versionKey', false)
+    return schema
+  }
+
+  const getUserModels = ({ userSchemas, connections, Meta }: InitializeUserModelsContext): UserModels =>
+    Object.keys(userSchemas)
+      .map((modelName) => {
+        const schema = userSchemas[modelName]
+        const contentSchema = debug(getContentSchema(Meta, (schema as any).clone()))
+        const liveSchema = getLiveSchema((schema as any).clone())
+
+        return {
+          modelName,
+          content: connections.content.model(modelName, contentSchema),
+          live: connections.live.model(modelName, liveSchema),
+          history: connections.content.model(`JangleHistory${modelName}`, schemas.History) as any
+        }
+      })
+
+  const initializeUserModels = (userModels: UserModels): Promise<UserModels> =>
+    Promise.all(userModels.map(userModel =>
+      Promise.all([
+        (userModel.content as any).init(),
+        (userModel.live as any).init(),
+        (userModel.history as any).init()
+      ])
+        .then(([ content, live, history ]) => ({
+          modelName: userModel.modelName,
+          content,
+          live,
+          history
+        }))
+        .catch(reject)
+    ))
+
+  const initializeJangleModels = ({ connections, schemas }: InitializeJangleModelsConfig): Promise<MetaModels> =>
     Promise.all([
-      (userModel.content as any).init(),
-      (userModel.live as any).init(),
-      (userModel.history as any).init()
+      (connections.content.model('JangleUser', schemas.User) as any).init()
     ])
-      .then(([ content, live, history ]) => ({
-        modelName: userModel.modelName,
-        content,
-        live,
-        history
+      .then(([ User ]) => ({
+        User
       }))
       .catch(reject)
-  ))
 
-const initializeJangleModels = ({ connections, schemas }: InitializeJangleModelsConfig): Promise<MetaModels> =>
-  Promise.all([
-    (connections.content.model('JangleUser', schemas.User) as any).init()
-  ])
-    .then(([ User ]) => ({
-      User
-    }))
-    .catch(reject)
+  const initializeModels = ({ config, Meta }: InitializeModelConfig) => (connections : MongoConnections): Promise<Models> =>
+    Promise.all([
+      Promise.resolve(
+        getUserModels({ userSchemas: config.schemas, connections, Meta })
+      )
+        .then(initializeUserModels)
+        .catch(reject),
+      initializeJangleModels({
+        connections, 
+        schemas: {     
+          User: schemas.User(config.secret),
+          History: schemas.History
+        }
+      })
+    ])
+      .then(([ userModels, jangleModels ]) => ({
+        secret: config.secret,
+        userModels,
+        jangleModels
+      }))
+      .catch(reject)
 
-const initializeModels = ({ config, Meta }: InitializeModelConfig) => (connections : MongoConnections): Promise<Models> =>
-  Promise.all([
-    Promise.resolve(
-      getUserModels({ userSchemas: config.schemas, connections, Meta })
-    )
-      .then(initializeUserModels)
-      .catch(reject),
-    initializeJangleModels({
-      connections, 
-      schemas: {     
-        User: schemas.User(config.secret),
-        History: schemas.History
-      }
-    })
-  ])
-    .then(([ userModels, jangleModels ]) => ({
-      secret: config.secret,
-      userModels,
-      jangleModels
-    }))
-    .catch(reject)
-
-export default {
-  initialize: ({ config }: ModelsContext): Promise<Models> =>
+  return ({ config }: ModelsContext): Promise<Models> =>
     Promise.resolve(getConnections(config.mongo))
       .then( initializeModels({ config, Meta: schemas.Meta }) )
       .catch(reject)
+}
+
+export default {
+  initialize
 }
