@@ -1,7 +1,7 @@
-import { debug, hash, isDictOf, parseConfigErrors, parseConfig, isValidUser, parseConfigAsUser, invalidUserErrors } from './utils'
+import { debug, hash, isDictOf, parseConfigErrors, parseConfig, isValidUser, parseConfigAsUser, invalidUserErrors, authenticateService, authenticateServices } from './utils'
 import { expect } from 'chai'
 import 'mocha'
-import { Config } from './types'
+import { Config, ProtectedService } from './types'
 import { Schema } from 'mongoose'
 
 describe('utils', () => {
@@ -344,8 +344,8 @@ describe('utils', () => {
 
   })
 
-  // isValidUser
-  describe('isValidUser', () => {
+  // parseConfigAsUser
+  describe('parseConfigAsUser', () => {
 
     it('returns a valid config, given a user', () =>
       parseConfigAsUser(
@@ -363,6 +363,118 @@ describe('utils', () => {
       )
     })
 
+  })
+
+  const token = 'some-token'
+
+  const functionsNeedingToken = [
+    'any', 'count', 'get', 'find',
+    'create', 'update', 'patch', 'remove',
+    'isLive', 'publish', 'unpublish',
+    'history', 'preview', 'restore',
+    'schema'
+  ]
+
+  const makeEmptyFunction = () =>
+    () => {}
+
+  const makeFlagSettingFunction = (flags, name) =>
+    (token) => () => { flags[name] = token }
+
+  const fakeProtectedServiceMaker = () => {
+
+    let flags = functionsNeedingToken
+      .reduce((obj, name) => {
+        obj[name] = undefined
+        return obj
+      }, {})
+
+    const service = functionsNeedingToken
+      .reduce((service, name) => {
+        service[name] = makeFlagSettingFunction(flags, name)
+        return service
+      }, {
+        live: {
+          any: makeEmptyFunction(),
+          count: makeEmptyFunction(),
+          get: makeEmptyFunction(),
+          find: makeEmptyFunction()
+        }
+      })
+
+    return {
+      flags,
+      service
+    }
+  }
+
+  // authenticateService
+  describe('authenticateService', () => {
+    const { flags, service } = fakeProtectedServiceMaker()
+    const protectedService = authenticateService(token, service as any)
+
+    functionsNeedingToken.forEach(name => {
+
+      const fn = protectedService[name]
+      const oldFlag = flags[name]
+
+      it(`creates ${name} function`, () => {
+        expect(fn).to.be.a('function')
+      })
+
+      fn()
+      const newFlag = flags[name]
+
+      it(`passes token into ${name} function`, () => {
+        expect(oldFlag).to.be.equal(undefined)
+        expect(newFlag).to.be.equal(token)
+      })
+
+    })
+  })
+
+  // authenticateServices
+  describe('authenticateServices', () => {
+    const fakeServices = [ 1, 2, 3, 4 ].map(fakeProtectedServiceMaker)
+    const flags = fakeServices.map(({ flags }) => flags)
+    const services = fakeServices.map(({ service }) => service)
+
+    const protectedServices = authenticateServices(token, services as any)
+
+    it('is an object of services', () => {
+      expect(protectedServices).to.be.a('object')
+
+      const isMadeOfObjects =
+        Object.keys(protectedServices)
+          .every(k => typeof protectedServices[k] === 'object')
+
+      expect(isMadeOfObjects).to.be.true
+
+    })
+
+    it('has every service containing required functions', () => {
+      const hasAllServiceFunctions =
+        Object.keys(protectedServices)
+          .map(k => protectedServices[k])
+          .every(service => {
+            const serviceFunctionNames = Object.keys(service)
+            return functionsNeedingToken
+              .every(name => serviceFunctionNames.indexOf(name) !== -1)
+          })
+      
+      const allServicePropsAreFunctions =
+        Object.keys(protectedServices)
+          .map(k => protectedServices[k])
+          .every(service =>
+            Object.keys(service)
+              .filter(key => key !== 'live')
+              .map(key => typeof service[key])
+              .every(type => type === 'function')
+          )
+
+      expect(hasAllServiceFunctions).to.be.true
+      expect(allServicePropsAreFunctions).to.be.true
+    })
   })
 
 })

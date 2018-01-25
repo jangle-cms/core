@@ -7,6 +7,8 @@ export const debug = (thing: any) => {
   return thing
 }
 
+export const reject = (reason: string) => Promise.reject(reason)
+
 export const hash = (secret: string) => (text : string): string =>
   crypto
     .createHmac('sha256', secret)
@@ -114,5 +116,3 @@ export const authenticateCore = ({ email, password }: UserConfig) => ({ auth, se
       services: authenticateServices(token, services)
     }))
     .catch(reject)
-
-export const reject = (reason: string) => Promise.reject(reason)
