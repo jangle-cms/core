@@ -1,6 +1,6 @@
 import { Schema } from 'mongoose'
 import { roles } from '../../types'
-import { hash } from '../../utils'
+import { encrypt } from '../../utils'
 
 export type User = {
   email: string,
@@ -8,7 +8,17 @@ export type User = {
   role: string
 }
 
-export default (secret: string) => new Schema({
+const encryptField = (fieldName: string) =>
+  function (next : Function) {
+    encrypt(this[fieldName])
+      .then(hash => {
+        this[fieldName] = hash
+        next()
+      })
+      .catch(reason => next(reason))
+  }
+
+const User = new Schema({
   email: {
     type: String,
     index: true,
@@ -19,7 +29,7 @@ export default (secret: string) => new Schema({
     type: String,
     required: [ true, 'Password is required.' ],
     select: false,
-    set: hash(secret)
+    set: encrypt
   },
   role: {
     type: String,
@@ -33,3 +43,7 @@ export default (secret: string) => new Schema({
   collection: 'jangle.users',
   versionKey: false
 })
+
+User.pre('save', encryptField('password'))
+
+export default User

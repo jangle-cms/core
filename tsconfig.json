@@ -5,12 +5,10 @@
     "declaration": true,
     "sourceMap": true,
     "outDir": "./lib",
-    "rootDir": "./src",
-    "strict": true,
+    "rootDir": ".",
     "noImplicitAny": true,
     "strictNullChecks": true,
     "strictFunctionTypes": true,
-    "noImplicitThis": true,
     "alwaysStrict": true,
     "noUnusedParameters": true,
     "noImplicitReturns": true,
@@ -28,6 +26,6 @@
     "./src/**/*.ts"
   ],
   "exclude": [
-    "./src/**/*.spec.ts"
+    "./tests/**/*.spec.ts"
   ]
 }

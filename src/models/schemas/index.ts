@@ -1,10 +1,8 @@
-import Meta from './Meta'
-import History from './History'
-import User from './User'
+import _Meta from './Meta'
+import _History from './History'
+import _User from './User'
 import { Schema } from 'mongoose'
 
-export default {
-  Meta,
-  History,
-  User
-}
+export const Meta : Schema = _Meta
+export const History : Schema = _History
+export const User : Schema = _User

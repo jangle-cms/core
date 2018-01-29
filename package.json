@@ -9,7 +9,7 @@
   "main": "./lib/index.js",
   "types": "./lib/index.d.ts",
   "scripts": {
-    "test": "nyc mocha -r ts-node/register ./src/**/*.spec.ts",
+    "test": "nyc mocha -r ts-node/register ./tests/*.spec.ts",
     "coverage": "nyc report --reporter=text-lcov | coveralls",
     "dev": "node_modules/typescript/bin/tsc -w"
   },
@@ -17,12 +17,14 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "bcrypt": "^1.0.3",
     "jsonwebtoken": "^8.1.0",
     "mongoose": "^5.0.1",
     "ramda": "^0.25.0",
     "typescript": "^2.6.2"
   },
   "devDependencies": {
+    "@types/bcrypt": "^1.0.0",
     "@types/chai": "^4.0.10",
     "@types/jsonwebtoken": "^7.2.5",
     "@types/mocha": "^2.2.45",
@@ -42,7 +44,7 @@
     "exclude": [
       "lib",
       "coverage",
-      "src/**/*.spec.ts",
+      "tests/**/*.spec.ts",
       "**/*.d.ts"
     ],
     "reporter": [

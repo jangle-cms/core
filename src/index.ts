@@ -18,9 +18,9 @@ export const baseConfig: Config = {
 export const start = (config: Config): Promise<ProtectedJangleCore> =>
   parseConfig(config, baseConfig)
     .then(config => ({ config }))
-    .then(models.initialize({ mongoose }))
-    .then(auth.initialize())
-    .then(services.initialize())
+    .then(models.initialize)
+    .then(auth.initialize)
+    .then(services.initialize)
     .catch(reject)
 
 export const startAsUser = (user: UserConfig, config: Config): Promise<JangleCore> =>

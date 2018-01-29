@@ -1,7 +1,7 @@
-import { debug, hash, isDictOf, parseConfigErrors, parseConfig, isValidUser, parseConfigAsUser, invalidUserErrors, authenticateService, authenticateServices } from './utils'
+import { debug, hash, encrypt, compare, isDictOf, parseConfigErrors, parseConfig, isValidUser, parseConfigAsUser, invalidUserErrors, authenticateService, authenticateServices } from '../src/utils'
 import { expect } from 'chai'
 import 'mocha'
-import { Config, ProtectedService } from './types'
+import { Config, ProtectedService } from '../src/types'
 import { Schema } from 'mongoose'
 
 describe('utils', () => {
@@ -32,15 +32,51 @@ describe('utils', () => {
   // Hash
   describe('hash', () => {
 
+    const secret = 'some secret'
+    const otherSecret = 'some other secret'
+    const value = 'some value'
+
     it('takes in a secret, returning a function', () => {
       expect(hash('secret')).to.be.a('function')
     })
 
     it('returns the same hash for the same secret', () => {
-      const secret = 'some secret'
-      const value = 'some value'
       expect(hash(secret)(value)).to.equal(hash(secret)(value))
     })
+
+    it('returns a different hash for a different secret', () => {
+      expect(hash(secret)(value)).to.not.equal(hash(otherSecret)(value))
+    })
+
+  })
+
+  const password = 'some password'
+  const otherPassword = 'some other password'
+
+  // Encrypt
+  describe('encrypt', () => {
+
+    it('encrypts a password', () =>
+      encrypt(password)
+        .then(hash => expect(hash).to.not.equal(password))
+    )
+
+  })
+
+  // Compare
+  describe('compare', () => {
+
+    it('returns true for same password', () =>
+      encrypt(password)
+        .then(hash => compare(password, hash))
+        .then(isMatch => expect(isMatch).to.be.true)
+    )
+
+    it('returns false for different password', () =>
+      encrypt(password)
+        .then(hash => compare(otherPassword, hash))
+        .then(isMatch => expect(isMatch).to.be.false)
+    )
 
   })
 
