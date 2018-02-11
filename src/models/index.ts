@@ -3,39 +3,45 @@ import { Meta, User, History } from './schemas'
 import * as mongoose from 'mongoose'
 import { reject, debug } from '../utils'
 
-const getConnections = (mongo: MongoUris): MongoConnections => ({
-  content: mongoose.createConnection(mongo.content),
-  live:  mongoose.createConnection(mongo.live)
-})
+export const getConnections = (mongo: MongoUris): Promise<MongoConnections> =>
+  Promise.all([
+    mongoose.createConnection(mongo.content),
+    mongoose.createConnection(mongo.live)
+  ])
+  .then(([ content, live ]) => ({ content, live }))
+  .catch(reason => {
+    console.error(reason)
+    return Promise.reject('Failed to connect to MongoDB')
+  })
 
-const getContentSchema = (Meta: Schema, schema: Schema): Schema => {
-  schema.add({
+export const getContentSchema = (Meta: Schema, schema: Schema): Schema => {
+  const contentSchema = (schema as any).clone()
+  contentSchema.add({
     jangle: {
       type: Meta,
       required: [ true, 'User-defined models require Jangle meta.' ]
     }
   })
 
-  schema.set('versionKey', false)
-  return schema
+  contentSchema.set('versionKey', false)
+  return contentSchema
 }
 
-const getLiveSchema = (schema: Schema): Schema => {
-  schema.set('versionKey', false)
-  return schema
+export const getLiveSchema = (schema: Schema): Schema => {
+  const liveSchema = (schema as any).clone()
+  liveSchema.set('versionKey', false)
+  return liveSchema
 }
 
 const getUserModels = ({ userSchemas, connections, Meta }: InitializeUserModelsContext): UserModels =>
   Object.keys(userSchemas)
     .map((modelName) => {
       const schema = userSchemas[modelName]
-      const contentSchema = getContentSchema(Meta, (schema as any).clone())
-      const liveSchema = getLiveSchema((schema as any).clone())
 
       return {
         modelName,
-        content: connections.content.model(modelName, contentSchema),
-        live: connections.live.model(modelName, liveSchema),
+        content: connections.content.model(modelName, getContentSchema(Meta, schema)),
+        live: connections.live.model(modelName, getLiveSchema(schema)),
         history: connections.content.model(`JangleHistory${modelName}`, History) as any
       }
     })
@@ -88,7 +94,7 @@ const initializeModels = ({ config, Meta }: InitializeModelConfig) => (connectio
     .catch(reject)
 
 const initialize = ({ config }: ModelsContext): Promise<Models> =>
-  Promise.resolve(getConnections(config.mongo))
+  getConnections(config.mongo)
     .then(initializeModels({ config, Meta }))
     .catch(reject)
 

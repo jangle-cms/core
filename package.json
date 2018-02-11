@@ -9,7 +9,7 @@
   "main": "./lib/index.js",
   "types": "./lib/index.d.ts",
   "scripts": {
-    "test": "nyc mocha -r ts-node/register ./tests/*.spec.ts",
+    "test": "nyc mocha --exit -r ts-node/register ./tests/*.spec.ts",
     "coverage": "nyc report --reporter=text-lcov | coveralls",
     "dev": "node_modules/typescript/bin/tsc -w"
   },
