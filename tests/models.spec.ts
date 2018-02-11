@@ -5,15 +5,9 @@ import { Connection, Schema } from 'mongoose'
 import { MongoUris } from '../src/types'
 import Meta from '../src/models/schemas/Meta';
 
-// TODO: Find a way to test MongoDB in TravisCI
-const ignoreErrorInTestEnvironment = (reason) =>
-  process.env.NODE_ENV !== 'test'
-    ? Promise.reject(reason)
-    : undefined
-
 const uris: MongoUris = {
   content: process.env.MONGO_URI || 'mongodb://localhost/jangle-test',
-  live: process.env.MONGO_URI || 'mongodb://localhost/jangle-test-live',
+  live: process.env.MONGO_URI_LIVE || 'mongodb://localhost/jangle-test-live',
 }
 
 describe('models', () => {
@@ -31,7 +25,6 @@ describe('models', () => {
           expect(connections.live).to.exist
           expect(connections.live).instanceof(Connection)
         })
-        .catch(ignoreErrorInTestEnvironment)
     )
   })
 
