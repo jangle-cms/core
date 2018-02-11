@@ -3,6 +3,7 @@ env:
   global:
     # Use a better mocha reporter for Travis
     - MOCHA_REPORTER=spec
+    - NODE_ENV=test
 # Use the Travis Docker build system which is faster
 sudo: false
 # Specify to use node

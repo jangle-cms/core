@@ -6,8 +6,8 @@ import { MongoUris } from '../src/types'
 import Meta from '../src/models/schemas/Meta';
 
 // TODO: Find a way to test MongoDB in TravisCI
-const ignoreErrorInProduction = (reason) =>
-  process.env.NODE_ENV !== 'production'
+const ignoreErrorInTestEnvironment = (reason) =>
+  process.env.NODE_ENV !== 'test'
     ? Promise.reject(reason)
     : undefined
 
@@ -31,7 +31,7 @@ describe('models', () => {
           expect(connections.live).to.exist
           expect(connections.live).instanceof(Connection)
         })
-        .catch(ignoreErrorInProduction)
+        .catch(ignoreErrorInTestEnvironment)
     )
   })
 
