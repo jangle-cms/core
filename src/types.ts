@@ -142,8 +142,8 @@ export type AnyFunction = (params?: AnyParams) => Promise<boolean>
 export type CountFunction = (params?: CountParams) => Promise<number>
 export type FindFunction<T> = (params?: FindParams) => Promise<T[]>
 export type GetFunction<T> = (id: Id, params?: GetParams) => Promise<T>
-export type CreateFunction<T> = (newItem: T) => Promise<T>
-export type UpdateFunction<T> = (id: Id, newItem: T) => Promise<T>
+export type CreateFunction<T> = (newItem: object) => Promise<T>
+export type UpdateFunction<T> = (id: Id, newItem: object) => Promise<T>
 export type PatchFunction<T> = (id: Id, newValues: Dict<any>) => Promise<T>
 export type RemoveFunction<T> = (id: Id) => Promise<T>
 export type IsLiveFunction = (id: Id) => Promise<boolean>
@@ -158,8 +158,8 @@ export type ProtectedAnyFunction = (token: Token, params?: AnyParams) => Promise
 export type ProtectedCountFunction = (token: Token, params?: CountParams) => Promise<number>
 export type ProtectedFindFunction<T> = (token: Token, params?: FindParams) => Promise<T[]>
 export type ProtectedGetFunction<T> = (token: Token, id: Id, params?: GetParams) => Promise<T>
-export type ProtectedCreateFunction<T> = (token: Token, newItem: T) => Promise<T>
-export type ProtectedUpdateFunction<T> = (token: Token, id: Id, newItem: T) => Promise<T>
+export type ProtectedCreateFunction<T> = (token: Token, newItem: object) => Promise<T>
+export type ProtectedUpdateFunction<T> = (token: Token, id: Id, newItem: object) => Promise<T>
 export type ProtectedPatchFunction<T> = (token: Token, id: Id, newValues: Dict<any>) => Promise<T>
 export type ProtectedRemoveFunction<T> = (token: Token, id: Id) => Promise<T>
 export type ProtectedIsLiveFunction = (token: Token, id: Id) => Promise<boolean>
@@ -246,14 +246,13 @@ export type ProtectedService<T> = {
   isLive: ProtectedIsLiveFunction
   publish: ProtectedPublishFunction<T>
   unpublish: ProtectedUnpublishFunction<T>
+  live: LiveService
 
   history: ProtectedHistoryFunction
   preview: ProtectedPreviewFunction<T>
   restore: ProtectedRestoreFunction<T>
 
   schema: ProtectedSchemaFunction
-
-  live: LiveService
 
 }
 

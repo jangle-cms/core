@@ -16,6 +16,11 @@ type InitializeServicesConfig = {
 type Service = ProtectedService<IJangleItem>
 type Services = Dict<Service>
 
+export const errors = {
+  missingId: 'Must provide an _id.',
+  missingItem: 'No item provided.'
+}
+
 const initializeServices = ({ userModels, validate }: InitializeServicesConfig): Services =>
   userModels.reduce((services: Services, userModel) => {
     services[userModel.modelName] = initializeService(validate, userModel)
@@ -36,40 +41,68 @@ const makeCount = ({ model }: { model: Model<Document> }) => (params?: CountPara
     .then((count: any) => count)
     .catch(reject)
 
-const makeFind = ({ model }: { model: Model<Document> }) => (params?: FindParams): Promise<IJangleItem[]> =>
-  model.find()
-    .where(params && params.where ? params.where : {})
-    .skip(params && params.skip ? params.skip : 0)
-    .limit(params && params.limit ? params.limit : undefined as any)
-    .populate(params && params.populate ? params.populate : undefined as any)
-    .select(params && params.select ? params.select : undefined as any)
-    .sort(params && params.sort ? params.sort : undefined as any)
-    .lean()
-    .exec()
-    .catch(reject) as any
+const makeFind = ({ model }: { model: Model<Document> }) => (params?: FindParams): Promise<IJangleItem[]> => {
+  let query = model.find()
 
-const makeGet = ({ model }: { model: Model<Document> }) => (_id: Id, params?: GetParams): Promise<IJangleItem> =>
-  model.findOne({ _id })
-    .populate(params && params.populate ? params.populate : undefined as any)
-    .select(params && params.select ? params.select : undefined as any)
+  if (params) {
+    query = query
+      .where(params.where ? params.where : {})
+      .skip(params.skip ? params.skip : 0)
+      .limit(params.limit ? params.limit : undefined as any)
+      .select(params.select ? params.select : undefined as any)
+      .sort(params.sort ? params.sort : undefined as any)
+
+    if (params.populate) {
+      query = query.populate(params.populate)
+    }
+  }
+
+  return query
     .lean()
     .exec()
     .catch(reject) as any
+}
+
+const makeGet = ({ model }: { model: Model<Document> }) => (_id: Id, params?: GetParams): Promise<IJangleItem> => {
+  if (_id == null) {
+    return Promise.reject(errors.missingId)
+  } else {
+    let query = model.findOne({ _id })
+
+    if (params) {
+      query = query
+        .select(params.select ? params.select : undefined as any)
+
+      if (params.populate) {
+        query = query.populate(params.populate)
+      }
+    }
+
+    return query
+      .lean()
+      .exec()
+      .catch(reject) as any
+  }
+}
 
 const stamp = (id: Id): Signature => ({
   by: id,
   at: new Date(Date.now())
 })
 
-const addCreateMeta = (userId: Id, item: object): IJangleItemInput => ({
-  ...item,
-  jangle: {
-    version: 1,
-    status: 'visible',
-    created: stamp(userId),
-    updated: stamp(userId)
+const addCreateMeta = (userId: Id, item: object): IJangleItemInput => {
+  const signature = stamp(userId)
+
+  return {
+    ...item,
+    jangle: {
+      version: 1,
+      status: 'visible',
+      created: signature,
+      updated: signature
+    }
   }
-})
+}
 
 const addUpdateMeta = (userId: Id, oldItem: any, item: any, status?: Status): IJangleItemInput => ({
   ...item,
@@ -82,8 +115,9 @@ const addUpdateMeta = (userId: Id, oldItem: any, item: any, status?: Status): IJ
 })
 
 type UpdateConfig = {
-  overwrite: boolean,
+  overwrite: boolean
   status?: Status
+  ignoreItem?: boolean
 }
 
 type ModifyContext = {
@@ -96,7 +130,11 @@ type HistoryContext = {
 }
 
 const makeCreate = ({ model }: ModifyContext) => (userId: Id, item: object): Promise<IJangleItem> =>
-  model.create(addCreateMeta(userId, item)) as any
+  (item)
+    ? model.create(addCreateMeta(userId, item))
+        .then(({ _id }) => makeGet({ model })(_id))
+        .catch(reject)
+    : Promise.reject(errors.missingItem)
 
 const makeObjectList = (obj: any) =>
   Object.keys(obj).map(key => ({ [key]: obj[key] }))
@@ -125,29 +163,33 @@ const createHistoryItem = ({ history }: HistoryContext, oldItem: IJangleItem) =>
     .then((_historyItem: any) => newItem)
     .catch(reject) as any
 
-const makeUpdateFunction = ({ overwrite, status }: UpdateConfig) => ({ content, history }: HistoryContext, userId: Id, id: Id, newItem: object): Promise<IJangleItem> =>
-  content.findById(id)
-    .lean()
-    .exec()
-    .then((oldItem: any) =>
-      content.findByIdAndUpdate(
-        id,
-        addUpdateMeta(userId, oldItem, newItem, status), {
-          runValidators: true,
-          overwrite,
-          setDefaultsOnInsert: true
-        } as any
+const makeUpdateFunction = ({ overwrite, status, ignoreItem }: UpdateConfig) => ({ content, history }: HistoryContext, userId: Id, id: Id, newItem: object): Promise<IJangleItem> =>
+  (id == null)
+    ? Promise.reject(errors.missingId)
+  : (ignoreItem || newItem)
+    ? content.findById(id)
+      .lean()
+      .exec()
+      .then((oldItem: any) =>
+        content.findByIdAndUpdate(
+          id,
+          addUpdateMeta(userId, oldItem, newItem, status), {
+            runValidators: true,
+            overwrite,
+            setDefaultsOnInsert: true
+          } as any
+        )
+          .lean()
+          .exec()
+          .then(createHistoryItem({ history, content }, oldItem))
+          .catch(reject)
       )
-        .lean()
-        .exec()
-        .then(createHistoryItem({ history, content }, oldItem))
-        .catch(reject)
-    )
-    .catch(reject) as any
+      .catch(reject) as any
+  : Promise.reject(errors.missingItem)
 
 const makeUpdate = makeUpdateFunction({ overwrite: true })
-const makePatch = makeUpdateFunction({ overwrite: true })
-const makeRemove = makeUpdateFunction({ overwrite: true, status: 'hidden' })
+const makePatch = makeUpdateFunction({ overwrite: false })
+const makeRemove = makeUpdateFunction({ overwrite: false, status: 'hidden', ignoreItem: true })
 
 type PublishContext = {
   content: Model<Document>
