@@ -1,4 +1,4 @@
-import models, { getConnections, getContentSchema, getLiveSchema } from '../src/models/index'
+import models, { getConnections, getContentSchema, getLiveSchema, errors } from '../src/models/index'
 import { expect } from 'chai'
 import 'mocha'
 import { Connection, Schema, Model } from 'mongoose'
@@ -27,6 +27,17 @@ describe('models', () => {
           expect(connections.live).instanceof(Connection)
         })
     )
+
+    it('gives friendly error on bad uris', () => {
+      const oldConsoleError = console.error
+      console.error = () => undefined
+      return getConnections({ content: 'poop', live: 'poop' })
+        .catch(reason => {
+          console.error = oldConsoleError
+          expect(reason).to.equal(errors.badUri)
+        })
+    })
+
   })
 
   const schema = ExampleSchema as any

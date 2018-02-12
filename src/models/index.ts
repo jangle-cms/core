@@ -3,6 +3,10 @@ import { Meta, User, History } from './schemas'
 import * as mongoose from 'mongoose'
 import { reject, debug } from '../utils'
 
+export const errors = {
+  badUri: 'Failed to connect to MongoDB.'
+}
+
 export const getConnections = (mongo: MongoUris): Promise<MongoConnections> =>
   Promise.all([
     mongoose.createConnection(mongo.content),
@@ -11,7 +15,7 @@ export const getConnections = (mongo: MongoUris): Promise<MongoConnections> =>
   .then(([ content, live ]) => ({ content, live }))
   .catch(reason => {
     console.error(reason)
-    return Promise.reject('Failed to connect to MongoDB')
+    return Promise.reject(errors.badUri)
   })
 
 export const getContentSchema = (Meta: Schema, schema: Schema): Schema => {
