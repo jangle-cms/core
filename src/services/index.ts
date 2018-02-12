@@ -212,7 +212,7 @@ const makeHistoryPreview = ({ history, content }: HistoryContext, id: Id, versio
     .catch(reject) as any
 
 const makeSchema = (content: Model<Document>) =>
-  content.schema as any
+  (content.schema as any).paths as any
 
 const initializeService = (validate: ValidateFunction, { content, live, history }: UserModel): Service => {
   const service: Service = {

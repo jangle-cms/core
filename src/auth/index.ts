@@ -1,10 +1,18 @@
 import { Models, Auth, Token, IUserModel, Id, Authorization, IUserDocument } from '../types'
-import { hash, reject, compare } from '../utils'
+import { hash, reject, compare, debug } from '../utils'
 import * as jwt from 'jsonwebtoken'
 
 type AuthContext = {
   secret: string
   User: IUserModel
+}
+
+export const errors = {
+  invalidUser: 'Could not create admin user.',
+  noMatch: 'No user matches that token.',
+  invalidToken: 'Token is invalid.',
+  adminExists: 'Admin user already exists.',
+  badLogin: 'Failed to sign in.'
 }
 
 const generateToken = (secret: string, payload: object): Token =>
@@ -14,7 +22,7 @@ const decodeToken = (secret: string, token: string): Promise<Id> =>
   new Promise((resolve, reject) =>
     jwt.verify(token, secret, (err, payload : any) =>
       (err || payload == null || payload.id == null)
-        ? reject('Token is invalid.')
+        ? reject(errors.invalidToken)
         : resolve(payload.id)
     )
   )
@@ -24,7 +32,7 @@ const checkUserIdFromToken = (User: IUserModel) => (id: Id): Promise<Id> =>
     .exec()
     .then(count => (count > 0)
       ? id
-      : Promise.reject('No user matches that token.')
+      : Promise.reject(errors.noMatch)
     )
     .catch(reject)
 
@@ -39,17 +47,14 @@ const makeHasInitialAdmin = (User: IUserModel)=> () : Promise<boolean> =>
     .then(count => count > 0)
     .catch(reject)
 
-const createAdminUser = (User: IUserModel, email: string, password: string): Promise<IUserDocument> => 
+const createAdminUser = (User: IUserModel, email: string, password: string): Promise<IUserDocument> =>
   User.create({ email, password, role: 'admin' })
-    .catch(reason => {
-      console.error('createAdminUser', reason)
-      return Promise.reject('Could not create admin user.')
-    })
+    .catch(_reason => Promise.reject(errors.invalidUser))
 
 const makeCreateInitialAdmin = ({ secret, User }: AuthContext) => (email: string, password: string): Promise<Token> =>
   makeHasInitialAdmin(User)()
     .then(hasAdminAlready => hasAdminAlready
-      ? Promise.reject('Admin user already exists.')
+      ? Promise.reject(errors.adminExists)
       : createAdminUser(User, email, password)
     )
     .then(({ _id }) => generateToken(secret, { id: _id }))
@@ -57,24 +62,19 @@ const makeCreateInitialAdmin = ({ secret, User }: AuthContext) => (email: string
 
 const makeSignIn = ({ secret, User }: AuthContext) => (email: string, password: string): Promise<Token> =>
   User.findOne({ email })
+    .select('password')
     .lean()
     .exec()
-    .then(user => user
-      ? user
-      : Promise.reject('No user found with that email.')
-    )
+    .then(user => user || Promise.reject(errors.badLogin))
     .then((user : any) =>
       compare(password, user.password)
         .then(isMatch => isMatch
           ? user
-          : Promise.reject('Email and password do not match.')
+          : Promise.reject(errors.badLogin)
         )
     )
     .then((user : any) => generateToken(secret, { id: user._id }))
-    .catch(reason => {
-      console.error('signIn', reason)
-      return Promise.reject('Failed to sign in.')
-    })
+    .catch(_reason => Promise.reject(errors.badLogin))
 
 const makeAuthorization = (context: AuthContext): Authorization => ({
   signIn: makeSignIn(context),

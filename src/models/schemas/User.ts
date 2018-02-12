@@ -1,22 +1,12 @@
 import { Schema } from 'mongoose'
 import { roles } from '../../types'
-import { encrypt } from '../../utils'
+import { encrypt, debug } from '../../utils'
 
 export type User = {
   email: string,
   password: string,
   role: string
 }
-
-const encryptField = (fieldName: string) =>
-  function (next : Function) {
-    encrypt(this[fieldName])
-      .then(hash => {
-        this[fieldName] = hash
-        next()
-      })
-      .catch(reason => next(reason))
-  }
 
 const User = new Schema({
   email: {
@@ -29,7 +19,14 @@ const User = new Schema({
     type: String,
     required: [ true, 'Password is required.' ],
     select: false,
-    set: encrypt
+    validate: {
+      validator: function (value: any) {
+        return encrypt(value).then(hash => {
+          this.password = hash
+          return true
+        })
+      },
+    }
   },
   role: {
     type: String,
@@ -43,7 +40,5 @@ const User = new Schema({
   collection: 'jangle.users',
   versionKey: false
 })
-
-User.pre('save', encryptField('password'))
 
 export default User

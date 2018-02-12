@@ -6,8 +6,8 @@ import { MongoUris } from '../src/types'
 import Meta from '../src/models/schemas/Meta';
 
 const uris: MongoUris = {
-  content: process.env.MONGO_URI || 'mongodb://localhost/jangle-test',
-  live: process.env.MONGO_URI_LIVE || 'mongodb://localhost/jangle-test-live',
+  content: process.env.MONGO_TEST_URI || 'mongodb://localhost/jangle-test',
+  live: process.env.MONGO_TEST_URI_LIVE || 'mongodb://localhost/jangle-test-live',
 }
 
 const ExampleSchema = new Schema({
