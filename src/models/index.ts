@@ -37,12 +37,14 @@ const getUserModels = ({ userSchemas, connections, Meta }: InitializeUserModelsC
   Object.keys(userSchemas)
     .map((modelName) => {
       const schema = userSchemas[modelName]
+      const history = connections.content.model(`JangleHistory${modelName}`, History)
+      history.collection.name = history.collection.name.split('janglehistory').join('jangle.history.')
 
       return {
         modelName,
         content: connections.content.model(modelName, getContentSchema(Meta, schema)),
         live: connections.live.model(modelName, getLiveSchema(schema)),
-        history: connections.content.model(`JangleHistory${modelName}`, History) as any
+        history: history as any
       }
     })
 
@@ -55,9 +57,9 @@ const initializeUserModels = (userModels: UserModels): Promise<UserModels> =>
     ])
       .then(([ content, live, history ]) => ({
         modelName: userModel.modelName,
-        content,
-        live,
-        history
+        content: userModel.content,
+        live: userModel.live,
+        history: userModel.history
       }))
       .catch(reject)
   ))

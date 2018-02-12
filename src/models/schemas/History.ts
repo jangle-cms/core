@@ -40,6 +40,5 @@ export default new Schema({
     required: [ true, 'Need to track item updates.' ]
   }
 }, {
-  collection: 'jangle.history',
   versionKey: false
 })

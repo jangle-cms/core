@@ -1,7 +1,7 @@
 import models, { getConnections, getContentSchema, getLiveSchema } from '../src/models/index'
 import { expect } from 'chai'
 import 'mocha'
-import { Connection, Schema } from 'mongoose'
+import { Connection, Schema, Model } from 'mongoose'
 import { MongoUris } from '../src/types'
 import Meta from '../src/models/schemas/Meta';
 
@@ -10,11 +10,12 @@ const uris: MongoUris = {
   live: process.env.MONGO_URI_LIVE || 'mongodb://localhost/jangle-test-live',
 }
 
-describe('models', () => {
+const ExampleSchema = new Schema({
+  name: String,
+  age: Number
+})
 
-  it('has an initialize method', () => {
-    expect(models.initialize).to.exist
-  })
+describe('models', () => {
 
   describe('getConnections', () => {
     it('creates connections from uris', () =>
@@ -28,10 +29,6 @@ describe('models', () => {
     )
   })
 
-  const ExampleSchema = new Schema({
-    name: String,
-    age: Number
-  })
   const schema = ExampleSchema as any
   const metaSchema = Meta as any
   
@@ -66,6 +63,61 @@ describe('models', () => {
     it('does not add jangle meta to schema', () => {
       expect(livePaths).does.not.contain('jangle')
     })
+  })
+
+  describe('initialize', () => {
+
+    const schemas = { ExampleSchema }
+    const metaModelNames = [ 'User' ]
+    const initialSecret = 'some-secret'
+    let result = undefined
+
+    before(() =>
+      models
+        .initialize({
+          config: {
+            schemas,
+            secret: initialSecret,
+            mongo: uris
+          }
+        })
+        .then(models => { result = models })
+    )
+
+    it('has secret that was provided', () => {
+      expect(result.secret).to.equal(initialSecret)
+    })
+
+    it('has user model names that match schema keys', () => {
+      const userModelNames = result.userModels.map(model => model.modelName)
+      expect(userModelNames).to.eql(Object.keys(schemas))
+    })
+
+    it('has a content model', () => {
+      const model = result.userModels.map(model => model.content)[0]
+      expect(model).to.exist
+      expect(model.update).to.be.a('function')
+    })
+
+    it('has a live model', () => {
+      const model = result.userModels.map(model => model.live)[0]
+      expect(model).to.exist
+      expect(model.update).to.be.a('function')
+    })
+
+    it('has a history model', () => {
+      const model = result.userModels.map(model => model.history)[0]
+      expect(model).to.exist
+      expect(model.modelName).contains('JangleHistory')
+      expect(model.collection.name).contains('jangle.history.')
+      expect(model.update).to.be.a('function')
+    })
+
+    it('has jangle models', () => {
+      const jangleModelNames = Object.keys(result.jangleModels)
+      expect(jangleModelNames).to.eql(metaModelNames)
+    })
+
   })
 
 })
