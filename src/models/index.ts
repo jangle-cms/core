@@ -1,7 +1,7 @@
 import { Config, Dict, MongoUris, Models, UserModels, MetaModels, ModelsNodeContext, MongoConnections, InitializeUserModelsContext, InitializeJangleModelsConfig, InitializeModelConfig, ModelsContext, Schema } from '../types'
 import { Meta, User, History } from './schemas'
 import * as mongoose from 'mongoose'
-import { reject, debug } from '../utils'
+import { reject, debug, toCollectionName } from '../utils'
 
 export const errors = {
   badUri: 'Failed to connect to MongoDB.'
@@ -41,13 +41,13 @@ const getUserModels = ({ userSchemas, connections, Meta }: InitializeUserModelsC
   Object.keys(userSchemas)
     .map((modelName) => {
       const schema = userSchemas[modelName]
-      const history = connections.content.model(`JangleHistory${modelName}`, History)
+      const history = connections.content.model(`JangleHistory${modelName}`, History, `jangle.history.${toCollectionName(modelName)}`)
       history.collection.name = history.collection.name.split('janglehistory').join('jangle.history.')
 
       return {
         modelName,
-        content: connections.content.model(modelName, getContentSchema(Meta, schema)),
-        live: connections.live.model(modelName, getLiveSchema(schema)),
+        content: connections.content.model(modelName, getContentSchema(Meta, schema), toCollectionName(modelName)),
+        live: connections.live.model(modelName, getLiveSchema(schema), toCollectionName(modelName)),
         history: history as any
       }
     })
