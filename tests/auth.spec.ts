@@ -61,13 +61,13 @@ describe('auth', () => {
 
   describe('createInitialAdmin', () => {
 
-    it('disallows creation of invalid user', () => {
+    it('disallows creation of invalid user', () =>
       Auth.auth.createInitialAdmin('test@jangle.com', undefined)
         .then(fail)
         .catch(reason => {
           expect(reason).to.equal(errors.invalidUser)
         })
-    })
+    )
   
     it('allows creation of valid user', () =>
       Auth.auth.createInitialAdmin(login.email, login.password)
