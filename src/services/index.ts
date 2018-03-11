@@ -18,7 +18,9 @@ type Services = Dict<Service>
 
 export const errors = {
   missingId: 'Must provide an _id.',
-  missingItem: 'No item provided.'
+  missingItem: 'No item provided.',
+  missingVersionNumber: 'No version number provided.',
+  negativeVersionNumber: 'Version must be greater than zero.'
 }
 
 const initializeServices = ({ userModels, validate }: InitializeServicesConfig): Services =>
@@ -150,18 +152,22 @@ const result = (list: any) =>
   })
 
 const makeHistoryItem = (oldItem: any, newItem: any) =>
-  result(R.difference(makeObjectList(oldItem), makeObjectList(newItem)))
+  result(R.difference(
+    makeObjectList({ ...oldItem, jangle: undefined }),
+    makeObjectList({ ...newItem, jangle: undefined })
+  ))
 
-const createHistoryItem = ({ history }: HistoryContext, oldItem: IJangleItem) => (newItem: any): Promise<any> =>
-  history.create({
-    itemId: oldItem._id,
-    version: oldItem.jangle.version,
-    status: oldItem.jangle.status,
-    updated: oldItem.jangle.updated,
-    changes: makeHistoryItem(oldItem, newItem)
-  })
-    .then((_historyItem: any) => newItem)
-    .catch(reject) as any
+const createHistoryItem = ({ history }: HistoryContext, oldItem: IJangleItem) =>
+  (newItem: any): Promise<any> =>
+    history.create({
+      itemId: oldItem._id,
+      version: oldItem.jangle.version,
+      status: oldItem.jangle.status,
+      updated: oldItem.jangle.updated,
+      changes: makeHistoryItem(oldItem, newItem)
+    })
+      .then((_historyItem: any) => newItem)
+      .catch(reject) as any
 
 const makeUpdateFunction = ({ overwrite, status, ignoreItem }: UpdateConfig) =>
   ({ content, history }: HistoryContext, userId: Id, id: Id, newItem?: object): Promise<IJangleItem> =>
@@ -169,23 +175,31 @@ const makeUpdateFunction = ({ overwrite, status, ignoreItem }: UpdateConfig) =>
       ? Promise.reject(errors.missingId)
     : (ignoreItem || newItem)
       ? content.findById(id)
-        .lean()
-        .exec()
-        .then((oldItem: any) =>
-          content.findByIdAndUpdate(
-            id,
-            addUpdateMeta(userId, oldItem, newItem, status), {
-              runValidators: true,
-              overwrite,
-              setDefaultsOnInsert: true
-            } as any
+          .lean()
+          .exec()
+          .then((oldItem: any) =>
+            content.findByIdAndUpdate(
+              id,
+              addUpdateMeta(userId, oldItem, newItem, status), {
+                runValidators: true,
+                overwrite,
+                setDefaultsOnInsert: true
+              } as any
+            )
+              .lean()
+              .exec()
+              .then(_ =>
+                content.findById(id)
+                  .lean()
+                  .exec()
+              )
+              .then(updatedItem =>
+                createHistoryItem({ history, content }, oldItem)(updatedItem)
+                  .then(_ => oldItem)
+              )
+              .catch(reject)
           )
-            .lean()
-            .exec()
-            .then(createHistoryItem({ history, content }, oldItem))
-            .catch(reject)
-        )
-        .catch(reject) as any
+          .catch(reject) as any
     : Promise.reject(errors.missingItem)
 
 const makeUpdate = makeUpdateFunction({ overwrite: true })
@@ -247,16 +261,21 @@ const buildOldItem = ([historyItems, currentItem]: any): Promise<any> =>
     })
     return item
   }, {
-      ...currentItem,
-      jangle: {
-        ...currentItem.jangle,
-        version: currentItem.jangle.version + 1
-      }
-    })
+    ...currentItem,
+    jangle: {
+      ...currentItem.jangle,
+      version: currentItem.jangle.version + 1
+    }
+  })
 
 const makeHistoryPreview = ({ history, content }: HistoryContext, id: Id, version: number): Promise<IJangleItem> =>
-  id
-    ? Promise.all([
+  (id === undefined) ?
+    Promise.reject(errors.missingId)
+  : (version === undefined) ?
+    Promise.reject(errors.missingVersionNumber)
+  : (version < 1) ?
+    Promise.reject(errors.negativeVersionNumber)
+  : Promise.all([
       history.find({ itemId: id, version: { $gte: version } })
         .sort('-version')
         .lean()
@@ -265,7 +284,6 @@ const makeHistoryPreview = ({ history, content }: HistoryContext, id: Id, versio
     ])
       .then(buildOldItem)
       .catch(reject) as any
-    : Promise.reject(id)
 
 const makeSchema = (content: Model<Document>) =>
   (content.schema as any).paths as any

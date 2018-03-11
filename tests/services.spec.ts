@@ -542,4 +542,127 @@ describe('core', () => {
 
   })
 
+  describe('history', () => {
+
+    it('requires a token', () =>
+      Jangle.services.Example.history(undefined, undefined)
+        .then(fail)
+        .catch(reason => expect(reason).to.equal(authErrors.invalidToken))
+    )
+
+    it('requires an _id', () =>
+      Jangle.services.Example.history(Token, undefined)
+        .then(fail)
+        .catch(reason => expect(reason).to.equal(errors.missingId))
+    )
+
+    it('returns four old versions', () =>
+      Jangle.services.Example.history(Token, Item._id)
+        .then(items => expect(items).to.have.length(4))
+    )
+
+  })
+
+  describe('previewRollback', () => {
+
+    it('requires a token', () =>
+      Jangle.services.Example.previewRollback(undefined, undefined, undefined)
+        .then(fail)
+        .catch(reason => expect(reason).to.equal(authErrors.invalidToken))
+    )
+
+    it('requires an _id', () =>
+      Jangle.services.Example.previewRollback(Token, undefined, undefined)
+        .then(fail)
+        .catch(reason => expect(reason).to.equal(errors.missingId))
+    )
+
+    it('requires a version number', () =>
+      Jangle.services.Example.previewRollback(Token, Item._id, undefined)
+        .then(fail)
+        .catch(reason => expect(reason).to.equal(errors.missingVersionNumber))
+    )
+
+    it('requires a positive version number', () =>
+      Jangle.services.Example.previewRollback(Token, Item._id, 0)
+        .then(fail)
+        .catch(reason => expect(reason).to.equal(errors.negativeVersionNumber))
+    )
+
+    it('returns a preview of the rollback', () =>
+      Jangle.services.Example.previewRollback(Token, Item._id, 1)
+        .then((item : any) => {
+          expect(item).to.exist
+          expect(item.name).to.exist
+          expect(item.age).to.exist
+          expect(item.jangle).to.exist
+          expect(item.jangle.version).to.equal(6)
+        })
+    )
+
+    it('does not actually rollback', () =>
+      Jangle.services.Example.previewRollback(Token, Item._id, 1)
+        .then((item : any) => {
+          expect(item).to.exist
+          expect(item.jangle).to.exist
+          expect(item.jangle.version).to.equal(6)
+        })
+    )
+
+    it('has same values as first version', () =>
+      Jangle.services.Example.previewRollback(Token, Item._id, 1)
+        .then((item : any) => {
+          let initialItem : any = Item
+          expect(item.name).to.equal(initialItem.name)
+          expect(item.age).to.equal(initialItem.age)
+        })
+    )
+
+  })
+
+
+  describe('rollback', () => {
+
+    it('requires a token', () =>
+      Jangle.services.Example.rollback(undefined, undefined, undefined)
+        .then(fail)
+        .catch(reason => expect(reason).to.equal(authErrors.invalidToken))
+    )
+
+    it('requires an _id', () =>
+      Jangle.services.Example.rollback(Token, undefined, undefined)
+        .then(fail)
+        .catch(reason => expect(reason).to.equal(errors.missingId))
+    )
+
+    it('requires a version number', () =>
+      Jangle.services.Example.rollback(Token, Item._id, undefined)
+        .then(fail)
+        .catch(reason => expect(reason).to.equal(errors.missingVersionNumber))
+    )
+
+    it('requires a positive version number', () =>
+      Jangle.services.Example.rollback(Token, Item._id, 0)
+        .then(fail)
+        .catch(reason => expect(reason).to.equal(errors.negativeVersionNumber))
+    )
+
+    it('returns old item on rollback', () =>
+      Jangle.services.Example.rollback(Token, Item._id, 1)
+        .then((item : any) => {
+          expect(item).to.exist
+          expect(item.name).to.exist
+          expect(item.age).to.exist
+          expect(item.jangle).to.exist
+          expect(item.jangle.version).to.equal(5)
+        })
+    )
+
+    it('created a new version after rollback', () =>
+      Jangle.services.Example.get(Token, Item._id)
+        .then(item => expect(item.jangle.version).to.equal(6))
+    )
+
+  })
+
 })
