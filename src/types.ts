@@ -142,32 +142,41 @@ export type AnyFunction = (params?: AnyParams) => Promise<boolean>
 export type CountFunction = (params?: CountParams) => Promise<number>
 export type FindFunction<T> = (params?: FindParams) => Promise<T[]>
 export type GetFunction<T> = (id: Id, params?: GetParams) => Promise<T>
+
 export type CreateFunction<T> = (newItem: object) => Promise<T>
 export type UpdateFunction<T> = (id: Id, newItem: object) => Promise<T>
 export type PatchFunction<T> = (id: Id, newValues: Dict<any>) => Promise<T>
 export type RemoveFunction<T> = (id: Id) => Promise<T>
+export type RestoreFunction<T> = (id: Id) => Promise<T>
+
 export type IsLiveFunction = (id: Id) => Promise<boolean>
 export type PublishFunction<T> = (id: Id) => Promise<T>
 export type UnpublishFunction<T> = (id: Id) => Promise<T>
+
 export type HistoryFunction = (id: Id) => Promise<IHistory[]>
-export type PreviewFunction<T> = (id: Id, version: number) => Promise<T>
-export type RestoreFunction<T> = (id: Id, version: number) => Promise<T>
+export type PreviewRollbackFunction<T> = (id: Id, version: number) => Promise<T>
+export type RollbackFunction<T> = (id: Id, version: number) => Promise<T>
+
 export type SchemaFunction = () => Promise<JangleSchema>
+
 
 export type ProtectedAnyFunction = (token: Token, params?: AnyParams) => Promise<boolean>
 export type ProtectedCountFunction = (token: Token, params?: CountParams) => Promise<number>
 export type ProtectedFindFunction<T> = (token: Token, params?: FindParams) => Promise<T[]>
 export type ProtectedGetFunction<T> = (token: Token, id: Id, params?: GetParams) => Promise<T>
+
 export type ProtectedCreateFunction<T> = (token: Token, newItem: object) => Promise<T>
 export type ProtectedUpdateFunction<T> = (token: Token, id: Id, newItem: object) => Promise<T>
 export type ProtectedPatchFunction<T> = (token: Token, id: Id, newValues: Dict<any>) => Promise<T>
 export type ProtectedRemoveFunction<T> = (token: Token, id: Id) => Promise<T>
+export type ProtectedRestoreFunction<T> = (token: Token, id: Id) => Promise<T>
+
 export type ProtectedIsLiveFunction = (token: Token, id: Id) => Promise<boolean>
 export type ProtectedPublishFunction<T> = (token: Token, id: Id) => Promise<T>
 export type ProtectedUnpublishFunction<T> = (token: Token, id: Id) => Promise<T>
 export type ProtectedHistoryFunction = (token: Token, id: Id) => Promise<IHistory[]>
-export type ProtectedPreviewFunction<T> = (token: Token, id: Id, version: number) => Promise<T>
-export type ProtectedRestoreFunction<T> = (token: Token, id: Id, version: number) => Promise<T>
+export type ProtectedPreviewRollbackFunction<T> = (token: Token, id: Id, version: number) => Promise<T>
+export type ProtectedRollbackFunction<T> = (token: Token, id: Id, version: number) => Promise<T>
 export type ProtectedSchemaFunction = (token: Token) => Promise<JangleSchema>
 
 export type LiveService = {
@@ -188,6 +197,7 @@ export type MetaService<T> = {
   update: UpdateFunction<T>
   patch: PatchFunction<T>
   remove: RemoveFunction<T>
+  restore: RestoreFunction<T>
 
 }
 
@@ -202,14 +212,15 @@ export type Service<T> = {
   update: UpdateFunction<T>
   patch: PatchFunction<T>
   remove: RemoveFunction<T>
+  restore: RestoreFunction<T>
 
   isLive: IsLiveFunction
   publish: PublishFunction<T>
   unpublish: UnpublishFunction<T>
 
   history: HistoryFunction
-  preview: PreviewFunction<T>
-  restore: RestoreFunction<T>
+  previewRollback: PreviewRollbackFunction<T>
+  rollback: RollbackFunction<T>
 
   schema: SchemaFunction
 
@@ -228,6 +239,7 @@ export type ProtectedMetaService<T> = {
   update: ProtectedUpdateFunction<T>
   patch: ProtectedPatchFunction<T>
   remove: ProtectedRemoveFunction<T>
+  restore: ProtectedRestoreFunction<T>
 
 }
 
@@ -242,6 +254,7 @@ export type ProtectedService<T> = {
   update: ProtectedUpdateFunction<T>
   patch: ProtectedPatchFunction<T>
   remove: ProtectedRemoveFunction<T>
+  restore: ProtectedRestoreFunction<T>
 
   isLive: ProtectedIsLiveFunction
   publish: ProtectedPublishFunction<T>
@@ -249,8 +262,8 @@ export type ProtectedService<T> = {
   live: LiveService
 
   history: ProtectedHistoryFunction
-  preview: ProtectedPreviewFunction<T>
-  restore: ProtectedRestoreFunction<T>
+  previewRollback: ProtectedPreviewRollbackFunction<T>
+  rollback: ProtectedRollbackFunction<T>
 
   schema: ProtectedSchemaFunction
 

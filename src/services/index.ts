@@ -163,33 +163,35 @@ const createHistoryItem = ({ history }: HistoryContext, oldItem: IJangleItem) =>
     .then((_historyItem: any) => newItem)
     .catch(reject) as any
 
-const makeUpdateFunction = ({ overwrite, status, ignoreItem }: UpdateConfig) => ({ content, history }: HistoryContext, userId: Id, id: Id, newItem: object): Promise<IJangleItem> =>
-  (id == null)
-    ? Promise.reject(errors.missingId)
-  : (ignoreItem || newItem)
-    ? content.findById(id)
-      .lean()
-      .exec()
-      .then((oldItem: any) =>
-        content.findByIdAndUpdate(
-          id,
-          addUpdateMeta(userId, oldItem, newItem, status), {
-            runValidators: true,
-            overwrite,
-            setDefaultsOnInsert: true
-          } as any
+const makeUpdateFunction = ({ overwrite, status, ignoreItem }: UpdateConfig) =>
+  ({ content, history }: HistoryContext, userId: Id, id: Id, newItem?: object): Promise<IJangleItem> =>
+    (id == null)
+      ? Promise.reject(errors.missingId)
+    : (ignoreItem || newItem)
+      ? content.findById(id)
+        .lean()
+        .exec()
+        .then((oldItem: any) =>
+          content.findByIdAndUpdate(
+            id,
+            addUpdateMeta(userId, oldItem, newItem, status), {
+              runValidators: true,
+              overwrite,
+              setDefaultsOnInsert: true
+            } as any
+          )
+            .lean()
+            .exec()
+            .then(createHistoryItem({ history, content }, oldItem))
+            .catch(reject)
         )
-          .lean()
-          .exec()
-          .then(createHistoryItem({ history, content }, oldItem))
-          .catch(reject)
-      )
-      .catch(reject) as any
-  : Promise.reject(errors.missingItem)
+        .catch(reject) as any
+    : Promise.reject(errors.missingItem)
 
 const makeUpdate = makeUpdateFunction({ overwrite: true })
 const makePatch = makeUpdateFunction({ overwrite: false })
 const makeRemove = makeUpdateFunction({ overwrite: false, status: 'hidden', ignoreItem: true })
+const makeRestore = makeUpdateFunction({ overwrite: false, status: 'visible', ignoreItem: true })
 
 type PublishContext = {
   content: Model<Document>
@@ -267,15 +269,17 @@ const initializeService = (validate: ValidateFunction, { content, live, history 
     create: (token, newItem) => validate(token).then(userId => makeCreate({ model: content })(userId, newItem)),
     update: (token, id, newItem) => validate(token).then(userId => makeUpdate({ content, history }, userId, id, newItem)),
     patch: (token, id, newValues) => validate(token).then(userId => makePatch({ content, history }, userId, id, newValues)),
-    remove: (token, id) => validate(token).then(userId => makeRemove({ content, history }, userId, id, {})),
+
+    remove: (token, id) => validate(token).then(userId => makeRemove({ content, history }, userId, id)),
+    restore: (token, id) => validate(token).then(userId => makeRestore({ history, content }, userId, id)),
 
     isLive: (token, id) => validate(token).then(_ => makeIsLive({ content, live }, id)),
     publish: (token, id) => validate(token).then(_ => makePublish({ content, live }, id)),
     unpublish: (token, id) => validate(token).then(_ => makeUnpublish({ content, live }, id)),
 
     history: (token, id) => validate(token).then(_ => makeHistory({ history, content }, id)),
-    preview: (token, id, version) => validate(token).then(_ => makeHistoryPreview({ history, content }, id, version)),
-    restore: (token, id, version) => validate(token).then(_ => makeHistoryPreview({ history, content }, id, version).then(newItem => service.update(token, id, newItem))),
+    previewRollback: (token, id, version) => validate(token).then(_ => makeHistoryPreview({ history, content }, id, version)),
+    rollback: (token, id, version) => validate(token).then(_ => makeHistoryPreview({ history, content }, id, version).then(newItem => service.update(token, id, newItem))),
 
     schema: (token) => validate(token).then(_ => makeSchema(content)),
 

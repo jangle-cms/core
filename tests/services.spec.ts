@@ -117,6 +117,7 @@ describe('core', () => {
       expect(Example.update).to.be.a('function')
       expect(Example.patch).to.be.a('function')
       expect(Example.remove).to.be.a('function')
+      expect(Example.restore).to.be.a('function')
     })
   
     it('has all publish functions', () => {
@@ -129,7 +130,7 @@ describe('core', () => {
     it('has all history functions', () => {
       const Example = Jangle.services.Example
       expect(Example.history).to.be.a('function')
-      expect(Example.preview).to.be.a('function')
+      expect(Example.previewRollback).to.be.a('function')
       expect(Example.restore).to.be.a('function')
     })
   
@@ -418,6 +419,33 @@ describe('core', () => {
       expect(RemovedItem).to.exist
       expect(RemovedItem.jangle).to.exist
       expect(RemovedItem.jangle.version).to.equal(3)
+    })
+
+  })
+
+  describe('restore', () => {
+
+    before(() => 
+      Jangle.services.Example.restore(Token, Item._id)
+        .then(item => { RemovedItem = item })
+    )
+
+    it('requires a token', () =>
+      Jangle.services.Example.restore(undefined, undefined)
+        .then(fail)
+        .catch(reason => expect(reason).to.equal(authErrors.invalidToken))
+    )
+
+    it('requires an _id', () =>
+      Jangle.services.Example.restore(Token, undefined)
+        .then(fail)
+        .catch(reason => expect(reason).to.equal(errors.missingId))
+    )
+
+    it('returns the old item', () => {
+      expect(RemovedItem).to.exist
+      expect(RemovedItem.jangle).to.exist
+      expect(RemovedItem.jangle.version).to.equal(4)
     })
 
   })

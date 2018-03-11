@@ -53,9 +53,9 @@ describe('auth', () => {
   describe('hasInitialAdmin', () => {
     it('has no initial users', () =>
       Auth.auth.hasInitialAdmin()
-      .then(hasInitialAdmin => {
-        expect(hasInitialAdmin).to.be.false
-      })
+        .then(hasInitialAdmin => {
+          expect(hasInitialAdmin).to.be.false
+        })
     )
   })
 
