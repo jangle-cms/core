@@ -2,11 +2,14 @@ import * as crypto from 'crypto'
 import { Config, Dict, UserConfig, ProtectedService, Service, Token, ProtectedJangleCore, JangleCore } from './types'
 import { Schema } from 'mongoose'
 import * as bcrypt from 'bcrypt'
+import * as pluralize from 'pluralize'
 
 export const debug = (thing: any) => {
   console.log(thing)
   return thing
 }
+
+export const toCollectionName = (thing: string) => pluralize.plural(thing).toLocaleLowerCase();
 
 export const reject = (reason: string) => Promise.reject(reason)
 
