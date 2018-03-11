@@ -7,7 +7,7 @@ import * as mongoose from 'mongoose'
 import models, { getConnections } from '../src/models/index'
 import services, { errors } from '../src/services/index'
 import { ObjectId } from 'bson'
-import { debug } from '../src/utils';
+import { debug } from '../src/utils'
 
 const fail = () => expect(true).to.be.false
 
@@ -274,6 +274,9 @@ describe('core', () => {
   let UpdateReturnedItem : IJangleItem = undefined
   let PatchReturnedItem : IJangleItem = undefined
   let RemovedItem : IJangleItem = undefined
+  let RestoredItem : IJangleItem = undefined
+  let PublishedItem : any = undefined
+  let UnpublishedItem : any = undefined
 
   describe('create', () => {
 
@@ -427,7 +430,7 @@ describe('core', () => {
 
     before(() => 
       Jangle.services.Example.restore(Token, Item._id)
-        .then(item => { RemovedItem = item })
+        .then(item => { RestoredItem = item })
     )
 
     it('requires a token', () =>
@@ -443,9 +446,98 @@ describe('core', () => {
     )
 
     it('returns the old item', () => {
-      expect(RemovedItem).to.exist
-      expect(RemovedItem.jangle).to.exist
-      expect(RemovedItem.jangle.version).to.equal(4)
+      expect(RestoredItem).to.exist
+      expect(RestoredItem.jangle).to.exist
+      expect(RestoredItem.jangle.version).to.equal(4)
+    })
+
+  })
+
+  describe('isLive', () => {
+
+    it('requires a token', () =>
+      Jangle.services.Example.isLive(undefined, undefined)
+        .then(fail)
+        .catch(reason => expect(reason).to.equal(authErrors.invalidToken))
+    )
+
+    it('requires an _id', () =>
+      Jangle.services.Example.isLive(Token, undefined)
+        .then(fail)
+        .catch(reason => expect(reason).to.equal(errors.missingId))
+    )
+
+    it('returns false before publish', () => {
+      Jangle.services.Example.isLive(Token, Item._id)
+        .then(isLive => expect(isLive).to.be.false)
+    })
+
+  })
+
+  describe('publish', () => {
+
+    it('requires a token', () =>
+      Jangle.services.Example.publish(undefined, undefined)
+        .then(fail)
+        .catch(reason => expect(reason).to.equal(authErrors.invalidToken))
+    )
+
+    it('requires an _id', () =>
+      Jangle.services.Example.publish(Token, undefined)
+        .then(fail)
+        .catch(reason => expect(reason).to.equal(errors.missingId))
+    )
+
+    it('returns the published item', () =>
+      Jangle.services.Example.publish(Token, Item._id)
+        .then((item : any) => {
+          expect(item.name).to.exist
+          expect(item.age).to.exist
+          expect(item.jangle).to.not.exist
+        })
+    )
+
+  })
+
+  describe('isLive', () => {
+
+    it('returns true after publish', () => {
+      Jangle.services.Example.isLive(Token, Item._id)
+        .then(isLive => expect(isLive).to.be.true)
+    })
+
+  })
+
+  describe('unpublish', () => {
+
+    it('requires a token', () =>
+      Jangle.services.Example.unpublish(undefined, undefined)
+        .then(fail)
+        .catch(reason => expect(reason).to.equal(authErrors.invalidToken))
+    )
+
+    it('requires an _id', () =>
+      Jangle.services.Example.unpublish(Token, undefined)
+        .then(fail)
+        .catch(reason => expect(reason).to.equal(errors.missingId))
+    )
+
+    it('returns the unpublished item', () =>
+      Jangle.services.Example.unpublish(Token, Item._id)
+        .then((item : any) => {
+          expect(item.name).to.exist
+          expect(item.age).to.exist
+          expect(item.jangle).to.not.exist
+        })
+    )
+
+  })
+
+  describe('isLive', () => {
+
+    it('returns false after unpublish', () => {
+      Jangle.services.Example.isLive(Token, Item._id)
+        .then(isLive => expect(isLive).to.be.false)
     })
 
   })

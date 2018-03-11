@@ -199,36 +199,46 @@ type PublishContext = {
 }
 
 const makeIsLive = ({ live }: PublishContext, id: Id): Promise<boolean> =>
-  live.count({ _id: id })
-    .lean()
-    .exec()
-    .then((count: any) => count > 0)
-    .catch(reject)
+  (id)
+    ? live.count({ _id: id })
+      .lean()
+      .exec()
+      .then((count: any) => count > 0)
+      .catch(reject)
+    : Promise.reject(errors.missingId)
 
-const stripJangleMeta = (doc: any): any => ({
-  ...doc,
-  jangle: undefined
-})
+const stripJangleMeta = (doc: any): any => {
+  const newDoc = { ...doc }
+  delete newDoc.jangle
+  return newDoc
+}
 
 const makePublish = ({ content, live }: PublishContext, id: Id): Promise<IJangleItem> =>
-  content.findById(id)
-    .lean()
-    .exec()
-    .then(stripJangleMeta)
-    .then(live.create)
-    .catch(reject) as any
+  (id)
+    ? content
+        .findOne({ _id: id })
+        .lean()
+        .exec()
+        .then(stripJangleMeta)
+        .then(doc => live.create(doc))
+        .catch(reject) as any
+    : Promise.reject(errors.missingId)
 
 const makeUnpublish = ({ live }: PublishContext, id: Id): Promise<IJangleItem> =>
-  live.findByIdAndRemove(id)
-    .lean()
-    .exec()
-    .catch(reject) as any
+  id
+    ? live.findByIdAndRemove(id)
+        .lean()
+        .exec()
+        .catch(reject) as any
+    : Promise.reject(errors.missingId)
 
 const makeHistory = ({ history }: HistoryContext, id: Id): Promise<IHistoryDocument[]> =>
-  history.find({ itemId: id })
-    .lean()
-    .exec()
-    .catch(reject) as any
+  id
+    ? history.find({ itemId: id })
+        .lean()
+        .exec()
+        .catch(reject) as any
+    : Promise.reject(errors.missingId)
 
 const buildOldItem = ([historyItems, currentItem]: any): Promise<any> =>
   historyItems.reduce((item: any, { changes }: any) => {
@@ -245,15 +255,17 @@ const buildOldItem = ([historyItems, currentItem]: any): Promise<any> =>
     })
 
 const makeHistoryPreview = ({ history, content }: HistoryContext, id: Id, version: number): Promise<IJangleItem> =>
-  Promise.all([
-    history.find({ itemId: id, version: { $gte: version } })
-      .sort('-version')
-      .lean()
-      .exec(),
-    content.findById(id).lean().exec()
-  ])
-    .then(buildOldItem)
-    .catch(reject) as any
+  id
+    ? Promise.all([
+      history.find({ itemId: id, version: { $gte: version } })
+        .sort('-version')
+        .lean()
+        .exec(),
+      content.findById(id).lean().exec()
+    ])
+      .then(buildOldItem)
+      .catch(reject) as any
+    : Promise.reject(id)
 
 const makeSchema = (content: Model<Document>) =>
   (content.schema as any).paths as any
