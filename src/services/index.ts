@@ -6,6 +6,8 @@ import {
 } from '../types'
 import * as R from 'ramda'
 import { reject, debug } from '../utils'
+import { Schema } from 'mongoose'
+import * as pluralize from 'pluralize'
 
 type InitializeServicesConfig = {
   userModels: UserModels
@@ -285,8 +287,29 @@ const makeHistoryPreview = ({ history, content }: HistoryContext, id: Id, versio
       .then(buildOldItem)
       .catch(reject) as any
 
-const makeSchema = (content: Model<Document>) =>
-  (content.schema as any).paths as any
+const makeSchema = (content: Model<Document>) => {
+  const schema : any = (content.schema as any).paths
+  const fieldNames = Object.keys(schema)
+
+  return {
+    name: content.modelName,
+    labels: {
+      singular: content.modelName,
+      plural: pluralize(content.modelName)
+    },
+    fields: fieldNames.map(name => {
+      const field = schema[name]
+
+      return {
+        name,
+        label: name,
+        type: field.instance,
+        default: '',
+        required: field.isRequired || false
+      }
+    })
+  }
+}
 
 const initializeService = (validate: ValidateFunction, { content, live, history }: UserModel): Service => {
   const service: Service = {

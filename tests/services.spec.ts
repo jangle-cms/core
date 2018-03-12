@@ -665,4 +665,24 @@ describe('core', () => {
 
   })
 
+
+  describe('schema', () => {
+
+    it('requires a token', () =>
+      Jangle.services.Example.schema(undefined)
+        .then(fail)
+        .catch(reason => expect(reason).to.equal(authErrors.invalidToken))
+    )
+
+    it('requires an item with both fields', () =>
+      Jangle.services.Example.schema(Token)
+        .then(schema => {
+          debug(schema)
+          expect(schema.name).to.exist
+          expect(schema.labels).to.exist
+        })
+    )
+
+  })
+
 })
