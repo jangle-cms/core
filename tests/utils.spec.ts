@@ -1,4 +1,4 @@
-import { debug, hash, encrypt, compare, isDictOf, parseConfigErrors, parseConfig, isValidUser, parseConfigAsUser, invalidUserErrors, authenticateService, authenticateServices } from '../src/utils'
+import { debug, hash, encrypt, compare, isDictOf, parseConfigErrors, parseConfig, isValidUser, parseConfigAsUser, invalidUserErrors, authenticateService, authenticateServices, authenticateCore } from '../src/utils'
 import { expect } from 'chai'
 import 'mocha'
 import { Config, ProtectedService } from '../src/types'
@@ -56,9 +56,22 @@ describe('utils', () => {
   // Encrypt
   describe('encrypt', () => {
 
+
+    it('does not encrypt undefined', () =>
+      encrypt(undefined as any)
+        .then(_ => expect.fail)
+        .catch(reason => expect(reason).to.exist)
+    )
+
     it('encrypts a password', () =>
       encrypt(password)
         .then(hash => expect(hash).to.not.equal(password))
+    )
+
+    it('does not encrypt an object', () =>
+      encrypt({} as any)
+        .then(_ => expect.fail)
+        .catch(reason => expect(reason).to.exist)
     )
 
   })
@@ -76,6 +89,12 @@ describe('utils', () => {
       encrypt(password)
         .then(hash => compare(otherPassword, hash))
         .then(isMatch => expect(isMatch).to.be.false)
+    )
+
+    it('fails for missing hash', () =>
+      compare('trash', undefined)
+        .then(_ => expect.fail)
+        .catch(reason => expect(reason).to.exist)
     )
 
   })
@@ -511,6 +530,40 @@ describe('utils', () => {
       expect(hasAllServiceFunctions).to.be.true
       expect(allServicePropsAreFunctions).to.be.true
     })
+  })
+
+  describe('authenticateCore', () => {
+    const auth = {
+      admin: undefined,
+      hasInitialAdmin () {
+        return Promise.resolve(this.admin)
+      },
+      createInitialAdmin () {
+        this.admin = { email: 'ryan@jangle.com', password: 'password' }
+        return Promise.resolve('1234')
+      },
+      signIn (email, password) {
+        return Promise.resolve('1234')
+      },
+
+    }
+
+    it('works with no initial admin', () => {
+      authenticateCore({ email: 'ryan@jangle.com', password: 'password' })({ auth, services: {} })
+        .then(({ auth, services }) => {
+          expect(auth).to.exist
+          expect(services).to.exist
+        })
+    })
+
+    it('works with an initial admin', () => {
+      authenticateCore({ email: 'ryan@jangle.com', password: 'password' })({ auth, services: {} })
+        .then(({ auth, services }) => {
+          expect(auth).to.exist
+          expect(services).to.exist
+        })
+    })
+
   })
 
 })
