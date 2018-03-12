@@ -677,9 +677,9 @@ describe('core', () => {
     it('requires an item with both fields', () =>
       Jangle.services.Example.schema(Token)
         .then(schema => {
-          debug(schema)
           expect(schema.name).to.exist
           expect(schema.labels).to.exist
+          expect(schema.fields).to.exist
         })
     )
 
