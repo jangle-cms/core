@@ -64,7 +64,8 @@ export const parseConfigErrors = {
   notAnObjectOrUndefined: 'The jangle config should be an object or undefined.',
   badContentUri: 'The `mongo.content` option should start with "mongodb://".',
   badLiveUri: 'The `mongo.live` option should start with "mongodb://".',
-  badSchemas: 'The values for the `schemas` object can only be of type `Schema`.',
+  badLists: 'The values for the `lists` object can only be of type `Schema`.',
+  badItems: 'The values for the `items` object can only be of type `Schema`.',
   badSecret: 'The `secret` option must be a string.'
 }
 
@@ -75,8 +76,10 @@ export const parseConfig = (config: Config, baseConfig: Config): Promise<Config>
     ? Promise.reject(parseConfigErrors.badContentUri)
   : config && config.mongo && config.mongo.live && !startsWith('mongodb://', config.mongo.live)
     ? Promise.reject(parseConfigErrors.badLiveUri)
-  : config && config.schemas && !isDictOf(Schema, config.schemas)
-    ? Promise.reject(parseConfigErrors.badSchemas)
+  : config && config.lists && !isDictOf(Schema, config.lists)
+    ? Promise.reject(parseConfigErrors.badLists)
+  : config && config.items && !isDictOf(Schema, config.items)
+    ? Promise.reject(parseConfigErrors.badItems)
   : config && config.secret && typeof config.secret !== 'string'
     ? Promise.reject(parseConfigErrors.badSecret)
   : Promise.resolve({
@@ -88,9 +91,12 @@ export const parseConfig = (config: Config, baseConfig: Config): Promise<Config>
         ? config.mongo.live
         : baseConfig.mongo.live
     },
-    schemas: config != null && config.schemas
-        ? config.schemas
-        : baseConfig.schemas,
+    lists: config != null && config.lists
+        ? config.lists
+        : baseConfig.lists,
+    items: config != null && config.items
+        ? config.items
+        : baseConfig.items,
     secret: config != null && typeof config.secret === 'string'
       ? config.secret
       : baseConfig.secret

@@ -141,19 +141,21 @@ describe('utils', () => {
       content: 'mongodb://base',
       live: 'mongodb://base-live'
     },
-    schemas: {},
+    lists: {},
+    items: {},
     secret: 'default-secret'
   }
 
   const startsWith = (prefix, str) =>
     typeof str === 'string' && str.indexOf(prefix) === 0
 
-  const isValidConfig = (config) =>
+  const isValidConfig = (config: Config) =>
     (config && typeof config === 'object' &&
     config.mongo &&
     startsWith('mongodb://', config.mongo.content) &&
     startsWith('mongodb://', config.mongo.live) &&
-    config.schemas && isDictOf(Schema, config.schemas) &&
+    config.lists && isDictOf(Schema, config.lists) &&
+    config.items && isDictOf(Schema, config.items) &&
     typeof config.secret === 'string') || false
 
   const exampleConfigs = {
@@ -210,18 +212,32 @@ describe('utils', () => {
         error: parseConfigErrors.notAnObjectOrUndefined
       },
 
-      'a bad schema': {
+      'a bad list schema': {
         config: {
           mongo: {
             content: 'mongodb://new',
             live: 'mongodb://new-live'
           },
-          schemas: {
+          lists: {
             BlogPost: 'bad schema'
           },
           secret: 'new-secret'
         },
-        error: parseConfigErrors.badSchemas
+        error: parseConfigErrors.badLists
+      },
+
+      'a bad item schema': {
+        config: {
+          mongo: {
+            content: 'mongodb://new',
+            live: 'mongodb://new-live'
+          },
+          items: {
+            BlogPost: 'bad schema'
+          },
+          secret: 'new-secret'
+        },
+        error: parseConfigErrors.badItems
       },
 
       'a bad content uri': {

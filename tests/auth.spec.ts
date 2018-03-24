@@ -14,14 +14,15 @@ describe('auth', () => {
       live: process.env.MONGO_TEST_URI_LIVE || 'mongodb://localhost/jangle-test-live'
     },
     secret: 'some-secret',
-    schemas: {
+    lists: {
       Example: new Schema({
         name: String,
         age: Number
       })
-    }
+    },
+    items: {}
   }
-  const numberOfUserModels = Object.keys(config.schemas).length
+  const numberOfUserModels = Object.keys(config.lists).length
   const clearUserCollection = (models) =>
     models.jangleModels.User
       .remove({})

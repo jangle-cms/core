@@ -11,11 +11,12 @@ export const baseConfig: Config = {
     content: 'mongodb://localhost/jangle',
     live: 'mongodb://localhost/jangle-live'
   },
-  schemas: {},
+  lists: {},
+  items: {},
   secret: 'super-secret'
 }
 
-export const start = (config: Config): Promise<ProtectedJangleCore> =>
+const startWithoutUser = (config: Config): Promise<ProtectedJangleCore> =>
   parseConfig(config, baseConfig)
     .then(config => ({ config }))
     .then(models.initialize)
@@ -23,13 +24,17 @@ export const start = (config: Config): Promise<ProtectedJangleCore> =>
     .then(services.initialize)
     .catch(reject)
 
-export const startAsUser = (user: UserConfig, config: Config): Promise<JangleCore> =>
+const startAsUser = (user: UserConfig, config: Config): Promise<JangleCore> =>
   parseConfigAsUser(user, config, baseConfig)  
-    .then(start)
+    .then(startWithoutUser)
     .then(authenticateCore(user))
     .catch(reject)
 
+export const start = (config: Config): Promise<ProtectedJangleCore | JangleCore> =>
+  (config.user)
+    ? startAsUser(config.user, config)
+    : startWithoutUser(config)
+
 export default {
-  start,
-  startAsUser
+  start
 }

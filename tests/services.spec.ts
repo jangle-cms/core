@@ -18,7 +18,7 @@ describe('core', () => {
       live: process.env.MONGO_TEST_URI_LIVE || 'mongodb://localhost/jangle-test-live'
     },
     secret: 'some-secret',
-    schemas: {
+    lists: {
       Example: new Schema({
         name: {
           type: String,
@@ -29,9 +29,10 @@ describe('core', () => {
       AnotherExample: new Schema({
         title: String
       })
-    }
+    },
+    items: {}
   }
-  const numberOfUserModels = Object.keys(config.schemas).length
+  const numberOfUserModels = Object.keys(config.lists).length
 
   const dropCollections = (uri) =>
     new Promise((resolve, reject) => {

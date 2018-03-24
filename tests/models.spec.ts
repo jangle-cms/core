@@ -78,7 +78,7 @@ describe('models', () => {
 
   describe('initialize', () => {
 
-    const schemas = { ExampleSchema }
+    const lists = { ExampleSchema }
     const metaModelNames = [ 'User' ]
     const initialSecret = 'some-secret'
     let result = undefined
@@ -87,7 +87,8 @@ describe('models', () => {
       models
         .initialize({
           config: {
-            schemas,
+            lists,
+            items: {},
             secret: initialSecret,
             mongo: uris
           }
@@ -101,7 +102,7 @@ describe('models', () => {
 
     it('has user model names that match schema keys', () => {
       const userModelNames = result.userModels.map(model => model.modelName)
-      expect(userModelNames).to.eql(Object.keys(schemas))
+      expect(userModelNames).to.eql(Object.keys(lists))
     })
 
     it('has a content model', () => {

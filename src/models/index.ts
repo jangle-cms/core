@@ -61,9 +61,9 @@ const initializeUserModels = (userModels: UserModels): Promise<UserModels> =>
     ])
       .then(([ content, live, history ]) => ({
         modelName: userModel.modelName,
-        content: userModel.content,
-        live: userModel.live,
-        history: userModel.history
+        content,
+        live,
+        history
       }))
       .catch(reject)
   ))
@@ -80,7 +80,7 @@ const initializeJangleModels = ({ connections, schemas }: InitializeJangleModels
 const initializeModels = ({ config, Meta }: InitializeModelConfig) => (connections : MongoConnections): Promise<Models> =>
   Promise.all([
     Promise.resolve(
-      getUserModels({ userSchemas: config.schemas, connections, Meta })
+      getUserModels({ userSchemas: config.lists, connections, Meta })
     )
       .then(initializeUserModels)
       .catch(reject),

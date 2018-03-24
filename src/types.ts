@@ -292,11 +292,13 @@ export type Auth = {
 // Configuration
 
 export type Config = {
+  user?: UserConfig
   mongo: {
     content: MongoUri
     live: MongoUri
   }
-  schemas: Dict<Schema>
+  lists: Dict<Schema>
+  items: Dict<Schema>
   secret: string
 }
 
