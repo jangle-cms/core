@@ -1,9 +1,9 @@
-import auth, { errors } from '../src/auth/index'
+import auth, { errors } from '../auth/index'
 import { expect } from 'chai'
 import 'mocha'
-import { Config, Auth } from '../src/types'
+import { Config, Auth } from '../types'
 import { Schema } from 'mongoose'
-import models from '../src/models/index'
+import models from '../models/index'
 
 const fail = () => expect(true).to.be.false
 

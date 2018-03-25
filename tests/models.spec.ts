@@ -1,9 +1,9 @@
-import models, { getConnections, getContentSchema, getLiveSchema, errors } from '../src/models/index'
+import models, { getConnections, getContentSchema, getLiveSchema, errors } from '../models/index'
 import { expect } from 'chai'
 import 'mocha'
 import { Connection, Schema, Model } from 'mongoose'
-import { MongoUris } from '../src/types'
-import Meta from '../src/models/schemas/Meta';
+import { MongoUris } from '../types'
+import Meta from '../models/schemas/Meta';
 
 const uris: MongoUris = {
   content: process.env.MONGO_TEST_URI || 'mongodb://localhost/jangle-test',

@@ -1,4 +1,4 @@
-import jangle from '../src/index'
+import jangle from '../index'
 import { expect } from 'chai'
 import 'mocha'
 

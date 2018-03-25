@@ -201,7 +201,7 @@ export type MetaService<T> = {
 
 }
 
-export type Service<T> = {
+export type ListService<T> = {
 
   any: AnyFunction
   count: CountFunction
@@ -243,7 +243,7 @@ export type ProtectedMetaService<T> = {
 
 }
 
-export type ProtectedService<T> = {
+export type ProtectedListService<T> = {
 
   any: ProtectedAnyFunction
   count: ProtectedCountFunction
@@ -354,11 +354,11 @@ export type StartAsUserFunction =
 // Return values
 
 export type ProtectedJangleCore = {
-  services: Dict<ProtectedService<IJangleItem>>
+  lists: Dict<ProtectedListService<IJangleItem>>
   auth: Authorization
 }
 
 export type JangleCore = {
-  services: Dict<Service<IJangleItem>>
+  lists: Dict<ListService<IJangleItem>>
   auth: Authorization
 }

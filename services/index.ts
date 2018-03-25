@@ -1,7 +1,7 @@
 import {
   Auth, ProtectedJangleCore,
   UserModels, ValidateFunction,
-  MetaModels, ProtectedService, IJangleItem, Dict, UserModel, Token, AnyParams, ProtectedAnyFunction, CountParams, FindParams, GetParams, Id, IJangleItemInput, Signature, Status, IHistoryDocument, Model,
+  MetaModels, ProtectedListService, IJangleItem, Dict, UserModel, Token, AnyParams, ProtectedAnyFunction, CountParams, FindParams, GetParams, Id, IJangleItemInput, Signature, Status, IHistoryDocument, Model,
   Document
 } from '../types'
 import * as R from 'ramda'
@@ -15,8 +15,8 @@ type InitializeServicesConfig = {
   jangleModels: MetaModels
 }
 
-type Service = ProtectedService<IJangleItem>
-type Services = Dict<Service>
+type ListService = ProtectedListService<IJangleItem>
+type ListServices = Dict<ListService>
 
 export const errors = {
   missingId: 'Must provide an _id.',
@@ -25,9 +25,9 @@ export const errors = {
   negativeVersionNumber: 'Version must be greater than zero.'
 }
 
-const initializeServices = ({ userModels, validate }: InitializeServicesConfig): Services =>
-  userModels.reduce((services: Services, userModel) => {
-    services[userModel.modelName] = initializeService(validate, userModel)
+const initializeListServices = ({ userModels, validate }: InitializeServicesConfig): ListServices =>
+  userModels.reduce((services: ListServices, userModel) => {
+    services[userModel.modelName] = initializeListService(validate, userModel)
     return services
   }, {})
 
@@ -311,9 +311,9 @@ const makeSchema = (content: Model<Document>) => {
   }
 }
 
-const initializeService = (validate: ValidateFunction, { content, live, history }: UserModel): Service => {
-  const service: Service = {
+const initializeListService = (validate: ValidateFunction, { content, live, history }: UserModel): ListService => {
 
+  const service : ListService = {
     any: (token, params) => validate(token).then(_id => makeAny({ model: content })(params)),
     count: (token, params) => validate(token).then(_id => makeCount({ model: content })(params)),
     find: (token, params) => validate(token).then(_id => makeFind({ model: content })(params)),
@@ -342,7 +342,6 @@ const initializeService = (validate: ValidateFunction, { content, live, history 
       find: makeFind({ model: live }),
       get: makeGet({ model: live })
     }
-
   }
 
   return service
@@ -351,9 +350,9 @@ const initializeService = (validate: ValidateFunction, { content, live, history 
 const initialize = ({ auth, userModels, validate, jangleModels }: Auth): Promise<ProtectedJangleCore> =>
   Promise.all([
     Promise.resolve(auth),
-    initializeServices({ userModels, validate, jangleModels })
+    initializeListServices({ userModels, validate, jangleModels })
   ])
-    .then(([ auth, services ]) => ({ auth, services }))
+    .then(([ auth, lists ]) => ({ auth, lists }))
     .catch(reject)
 
 export default {

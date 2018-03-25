@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "target": "ES2015",
+    "target": "es6",
     "module": "commonjs",
     "declaration": true,
     "sourceMap": true,
@@ -14,7 +14,7 @@
     "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true,
     "moduleResolution": "node",
-    "baseUrl": "./src",
+    "baseUrl": ".",
     "paths": {
       "*": [
         "node_modules/*",
@@ -23,9 +23,10 @@
     }
   },
   "include": [
-    "./src/**/*.ts"
+    "./**/*.ts"
   ],
   "exclude": [
+    "./lib/**/*.ts",
     "./tests/**/*.spec.ts"
   ]
 }

@@ -11,6 +11,7 @@
   "scripts": {
     "test": "nyc mocha --exit -r ts-node/register ./tests/*.spec.ts",
     "coverage": "nyc report --reporter=text-lcov | coveralls",
+    "build": "node_modules/typescript/bin/tsc",
     "dev": "node_modules/typescript/bin/tsc -w"
   },
   "keywords": [],

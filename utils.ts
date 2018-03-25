@@ -1,8 +1,9 @@
 import * as crypto from 'crypto'
-import { Config, Dict, UserConfig, ProtectedService, Service, Token, ProtectedJangleCore, JangleCore } from './types'
+import { Config, Dict, UserConfig, ProtectedListService, ListService, Token, ProtectedJangleCore, JangleCore } from './types'
 import { Schema } from 'mongoose'
 import * as bcrypt from 'bcrypt'
 import * as pluralize from 'pluralize'
+import R = require('ramda');
 
 export const debug = (thing: any) => {
   console.log(thing)
@@ -76,10 +77,10 @@ export const parseConfig = (config: Config, baseConfig: Config): Promise<Config>
     ? Promise.reject(parseConfigErrors.badContentUri)
   : config && config.mongo && config.mongo.live && !startsWith('mongodb://', config.mongo.live)
     ? Promise.reject(parseConfigErrors.badLiveUri)
-  : config && config.lists && !isDictOf(Schema, config.lists)
-    ? Promise.reject(parseConfigErrors.badLists)
-  : config && config.items && !isDictOf(Schema, config.items)
-    ? Promise.reject(parseConfigErrors.badItems)
+  // : config && config.lists && !isDictOf(Schema, config.lists)
+  //   ? Promise.reject(parseConfigErrors.badLists)
+  // : config && config.items && !isDictOf(Schema, config.items)
+  //   ? Promise.reject(parseConfigErrors.badItems)
   : config && config.secret && typeof config.secret !== 'string'
     ? Promise.reject(parseConfigErrors.badSecret)
   : Promise.resolve({
@@ -131,24 +132,27 @@ export const parseConfigAsUser = (user: UserConfig, config: Config, baseConfig: 
     .then(_ => parseConfig(config, baseConfig))
     .catch(reject)
 
-export const authenticateService = <T>(token: Token, protectedService: ProtectedService<T>): Service<T> =>
-  Object.keys(protectedService)
+const allowMissingParams = (f : any) => (arg : any, ...params : any[]) =>
+  f(arg, ...params)
+
+export const authenticateService = <T>(token: Token, ProtectedListService: ProtectedListService<T>): ListService<T> =>
+  Object.keys(ProtectedListService)
     .filter(functionName => functionName !== 'live')
     .reduce((service: any, functionName) => {
-      service[functionName] = (protectedService as any)[functionName](token)
+      service[functionName] = allowMissingParams(R.curryN(2, (ProtectedListService as any)[functionName])(token))
       return service
     }, {
-      live: protectedService.live
-    }) as Service<T>
+      live: ProtectedListService.live
+    }) as ListService<T>
 
-export const authenticateServices = (token: Token, protectedServices: Dict<ProtectedService<any>>): Dict<Service<any>> =>
-  Object.keys(protectedServices)
-    .reduce((services: Dict<Service<any>>, serviceName) => {
-      services[serviceName] = authenticateService(token, protectedServices[serviceName])
+export const authenticateServices = (token: Token, ProtectedListServices: Dict<ProtectedListService<any>>): Dict<ListService<any>> =>
+  Object.keys(ProtectedListServices)
+    .reduce((services: Dict<ListService<any>>, serviceName) => {
+      services[serviceName] = authenticateService(token, ProtectedListServices[serviceName])
       return services
-    }, {}) as Dict<Service<any>>
+    }, {}) as Dict<ListService<any>>
 
-export const authenticateCore = ({ email, password }: UserConfig) => ({ auth, services }: ProtectedJangleCore): Promise<JangleCore> =>
+export const authenticateCore = ({ email, password }: UserConfig) => ({ auth, lists }: ProtectedJangleCore): Promise<JangleCore> =>
   auth.hasInitialAdmin()
     .then(hasInitialAdmin => hasInitialAdmin
       ? auth.signIn(email, password)
@@ -156,6 +160,6 @@ export const authenticateCore = ({ email, password }: UserConfig) => ({ auth, se
     )
     .then(token => ({
       auth: auth,
-      services: authenticateServices(token, services)
+      lists: authenticateServices(token, lists)
     }))
     .catch(reject)

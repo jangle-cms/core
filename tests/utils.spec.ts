@@ -1,7 +1,7 @@
-import { debug, hash, encrypt, compare, isDictOf, parseConfigErrors, parseConfig, isValidUser, parseConfigAsUser, invalidUserErrors, authenticateService, authenticateServices, authenticateCore } from '../src/utils'
+import { debug, hash, encrypt, compare, isDictOf, parseConfigErrors, parseConfig, isValidUser, parseConfigAsUser, invalidUserErrors, authenticateService, authenticateServices, authenticateCore } from '../utils'
 import { expect } from 'chai'
 import 'mocha'
-import { Config, ProtectedService } from '../src/types'
+import { Config } from '../types'
 import { Schema } from 'mongoose'
 
 describe('utils', () => {
@@ -212,33 +212,33 @@ describe('utils', () => {
         error: parseConfigErrors.notAnObjectOrUndefined
       },
 
-      'a bad list schema': {
-        config: {
-          mongo: {
-            content: 'mongodb://new',
-            live: 'mongodb://new-live'
-          },
-          lists: {
-            BlogPost: 'bad schema'
-          },
-          secret: 'new-secret'
-        },
-        error: parseConfigErrors.badLists
-      },
+      // 'a bad list schema': {
+      //   config: {
+      //     mongo: {
+      //       content: 'mongodb://new',
+      //       live: 'mongodb://new-live'
+      //     },
+      //     lists: {
+      //       BlogPost: 'bad schema'
+      //     },
+      //     secret: 'new-secret'
+      //   },
+      //   error: parseConfigErrors.badLists
+      // },
 
-      'a bad item schema': {
-        config: {
-          mongo: {
-            content: 'mongodb://new',
-            live: 'mongodb://new-live'
-          },
-          items: {
-            BlogPost: 'bad schema'
-          },
-          secret: 'new-secret'
-        },
-        error: parseConfigErrors.badItems
-      },
+      // 'a bad item schema': {
+      //   config: {
+      //     mongo: {
+      //       content: 'mongodb://new',
+      //       live: 'mongodb://new-live'
+      //     },
+      //     items: {
+      //       BlogPost: 'bad schema'
+      //     },
+      //     secret: 'new-secret'
+      //   },
+      //   error: parseConfigErrors.badItems
+      // },
 
       'a bad content uri': {
         config: {
@@ -442,27 +442,17 @@ describe('utils', () => {
     'any', 'count', 'get', 'find',
     'create', 'update', 'patch', 'remove',
     'isLive', 'publish', 'unpublish',
-    'history', 'preview', 'restore',
+    'history', 'preview', 'restore', 'rollback',
     'schema'
   ]
 
   const makeEmptyFunction = () =>
     () => {}
 
-  const makeFlagSettingFunction = (flags, name) =>
-    (token) => () => { flags[name] = token }
-
   const fakeProtectedServiceMaker = () => {
-
-    let flags = functionsNeedingToken
-      .reduce((obj, name) => {
-        obj[name] = undefined
-        return obj
-      }, {})
-
     const service = functionsNeedingToken
       .reduce((service, name) => {
-        service[name] = makeFlagSettingFunction(flags, name)
+        service[name] = (token, ...params) => token
         return service
       }, {
         live: {
@@ -474,31 +464,25 @@ describe('utils', () => {
       })
 
     return {
-      flags,
       service
     }
   }
 
   // authenticateService
   describe('authenticateService', () => {
-    const { flags, service } = fakeProtectedServiceMaker()
+    const { service } = fakeProtectedServiceMaker()
     const protectedService = authenticateService(token, service as any)
 
     functionsNeedingToken.forEach(name => {
-
       const fn = protectedService[name]
-      const oldFlag = flags[name]
 
       it(`creates ${name} function`, () => {
         expect(fn).to.be.a('function')
       })
 
-      fn()
-      const newFlag = flags[name]
-
       it(`passes token into ${name} function`, () => {
-        expect(oldFlag).to.be.equal(undefined)
-        expect(newFlag).to.be.equal(token)
+        const tokenFromFn = fn()
+        expect(tokenFromFn).to.be.equal(token)
       })
 
     })
@@ -507,7 +491,6 @@ describe('utils', () => {
   // authenticateServices
   describe('authenticateServices', () => {
     const fakeServices = [ 1, 2, 3, 4 ].map(fakeProtectedServiceMaker)
-    const flags = fakeServices.map(({ flags }) => flags)
     const services = fakeServices.map(({ service }) => service)
 
     const protectedServices = authenticateServices(token, services as any)
@@ -565,18 +548,18 @@ describe('utils', () => {
     }
 
     it('works with no initial admin', () => {
-      authenticateCore({ email: 'ryan@jangle.com', password: 'password' })({ auth, services: {} })
-        .then(({ auth, services }) => {
+      authenticateCore({ email: 'ryan@jangle.com', password: 'password' })({ auth, lists: {} })
+        .then(({ auth, lists }) => {
           expect(auth).to.exist
-          expect(services).to.exist
+          expect(lists).to.exist
         })
     })
 
     it('works with an initial admin', () => {
-      authenticateCore({ email: 'ryan@jangle.com', password: 'password' })({ auth, services: {} })
-        .then(({ auth, services }) => {
+      authenticateCore({ email: 'ryan@jangle.com', password: 'password' })({ auth, lists: {} })
+        .then(({ auth, lists }) => {
           expect(auth).to.exist
-          expect(services).to.exist
+          expect(lists).to.exist
         })
     })
 
