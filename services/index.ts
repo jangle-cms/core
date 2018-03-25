@@ -2,7 +2,9 @@ import {
   Auth, ProtectedJangleCore,
   UserModels, ValidateFunction,
   MetaModels, ProtectedListService, IJangleItem, Dict, UserModel, Token, AnyParams, ProtectedAnyFunction, CountParams, FindParams, GetParams, Id, IJangleItemInput, Signature, Status, IHistoryDocument, Model,
-  Document
+  Document,
+  JangleSchema,
+  JangleField
 } from '../types'
 import * as R from 'ramda'
 import { reject, debug } from '../utils'
@@ -287,7 +289,10 @@ const makeHistoryPreview = ({ history, content }: HistoryContext, id: Id, versio
       .then(buildOldItem)
       .catch(reject) as any
 
-const makeSchema = (content: Model<Document>) => {
+const excludeNames = (names: string[]) => ({ name }: JangleField) : boolean =>
+  names.indexOf(name) === -1
+
+const makeSchema = (content: Model<Document>) : JangleSchema => {
   const schema : any = (content.schema as any).paths
   const fieldNames = Object.keys(schema)
 
@@ -297,17 +302,19 @@ const makeSchema = (content: Model<Document>) => {
       singular: content.modelName,
       plural: pluralize(content.modelName)
     },
-    fields: fieldNames.map(name => {
-      const field = schema[name]
+    fields: fieldNames
+      .map(name => {
+        const field = schema[name]
 
-      return {
-        name,
-        label: name,
-        type: field.instance,
-        default: '',
-        required: field.isRequired || false
-      }
-    })
+        return {
+          name,
+          label: name,
+          type: field.instance,
+          default: '',
+          required: field.isRequired || false
+        }
+      })
+      .filter(excludeNames([ 'jangle', '_id' ]))
   }
 }
 

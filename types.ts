@@ -37,19 +37,21 @@ export interface IHistory {
   }[]
 }
 
+export type JangleField = {
+  name: string
+  label: string
+  type: string
+  default: string
+  required: boolean
+}
+
 export type JangleSchema = {
   name: string
   labels: {
     singular: string
     plural: string
   }
-  fields: {
-    name: string
-    label: string
-    type: string
-    default: string
-    required: boolean
-  }[]
+  fields: JangleField[]
 }
 
 export interface IUser {
