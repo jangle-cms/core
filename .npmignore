@@ -1,0 +1,14 @@
+.nyc_output/
+auth/
+coverage/
+docs/
+models/
+node_modules/
+services/
+tests/
+docker-compose.yml
+index.ts
+tsconfig.json
+types.ts
+utils.ts
+.DS_Store

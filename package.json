@@ -1,10 +1,10 @@
 {
-  "name": "jangle-core",
-  "version": "1.0.0",
-  "description": "",
+  "name": "@jangle/core",
+  "version": "0.1.2",
+  "description": "The core layer for Jangle CMS",
   "repository": {
     "type": "git",
-    "url": "https://github.com/jangle-cms/jangle-core.git"
+    "url": "git+https://github.com/jangle-cms/jangle-core.git"
   },
   "main": "./lib/index.js",
   "types": "./lib/index.d.ts",
@@ -15,7 +15,7 @@
     "dev": "node_modules/typescript/bin/tsc -w"
   },
   "keywords": [],
-  "author": "",
+  "author": "Ryan Haskell-Glatz",
   "license": "ISC",
   "dependencies": {
     "bcrypt": "^1.0.3",
@@ -54,5 +54,14 @@
       "html"
     ],
     "all": true
+  },
+  "bugs": {
+    "url": "https://github.com/jangle-cms/jangle-core/issues"
+  },
+  "homepage": "https://github.com/jangle-cms/jangle-core#readme",
+  "directories": {
+    "doc": "docs",
+    "lib": "lib",
+    "test": "tests"
   }
 }

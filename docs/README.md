@@ -317,6 +317,14 @@ blogPosts [ { _id: 5ab879fde2e1db7fdef1c511,
        updated: [Object] } } ]
 ```
 
-That's all for now, but more docs are on the way.
+The full app can be found over here: 
+
+[jangle-cms/jangle-demo](https://github.com/jangle-cms/jangle-demo)
+
+---
+
+## That's all for now...
+
+But many more docs are on the way!
 
 Thanks for checking out Jangle!
