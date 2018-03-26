@@ -27,14 +27,11 @@ export const encrypt = (password: string) : Promise<string> =>
         if (err) {
           reject(err)
         } else {
-          bcrypt.hash(password, salt, function (err, hash) {
-            if (err) {
-              reject(err)
-            } else {
-              resolve(hash)
-            }
-          })
-          salt
+          bcrypt.hash(password, salt, (err, hash) =>
+            (err)
+              ? reject(err)
+              : resolve(hash)
+          )
         }
       })
     } else {
