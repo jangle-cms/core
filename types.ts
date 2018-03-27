@@ -15,11 +15,8 @@ export type Dict<T> = { [key: string]: T }
 
 export type Id = any
 
-export type Status = 'visible' | 'hidden'
-export const statuses = ['visible', 'hidden']
-
 export type Role = 'admin' | 'editor'
-export const roles = ['admin', 'editor']
+export const roles = [ 'admin', 'editor' ]
 
 export type Signature = {
   by: Id
@@ -29,7 +26,6 @@ export type Signature = {
 export interface IHistory {
   itemId: Id
   version: number
-  status: Status
   updated: Signature
   changes: {
     field: string
@@ -66,7 +62,6 @@ export interface IUser {
 
 export interface IJangleMeta {
   version: number
-  status: Status
   created: Signature
   updated: Signature
 }
@@ -145,19 +140,31 @@ export type CountFunction = (params?: CountParams) => Promise<number>
 export type FindFunction<T> = (params?: FindParams) => Promise<T[]>
 export type GetFunction<T> = (id: Id, params?: GetParams) => Promise<T>
 
+export type ItemGetFunction<T> = (params?: GetParams) => Promise<T>
+
 export type CreateFunction<T> = (newItem: object) => Promise<T>
 export type UpdateFunction<T> = (id: Id, newItem: object) => Promise<T>
 export type PatchFunction<T> = (id: Id, newValues: Dict<any>) => Promise<T>
 export type RemoveFunction<T> = (id: Id) => Promise<T>
-export type RestoreFunction<T> = (id: Id) => Promise<T>
+
+export type ItemUpdateFunction<T> = (newItem: object) => Promise<T>
+export type ItemPatchFunction<T> = (newValues: Dict<any>) => Promise<T>
 
 export type IsLiveFunction = (id: Id) => Promise<boolean>
 export type PublishFunction<T> = (id: Id) => Promise<T>
 export type UnpublishFunction<T> = (id: Id) => Promise<T>
 
+export type ItemIsLiveFunction = () => Promise<boolean>
+export type ItemPublishFunction<T> = () => Promise<T>
+export type ItemUnpublishFunction<T> = () => Promise<T>
+
 export type HistoryFunction = (id: Id) => Promise<IHistory[]>
-export type PreviewRollbackFunction<T> = (id: Id, version: number) => Promise<T>
-export type RollbackFunction<T> = (id: Id, version: number) => Promise<T>
+export type PreviewRollbackFunction<T> = (id: Id, version?: number) => Promise<T>
+export type RollbackFunction<T> = (id: Id, version?: number) => Promise<T>
+
+export type ItemHistoryFunction = () => Promise<IHistory[]>
+export type ItemPreviewRollbackFunction<T> = (version?: number) => Promise<T>
+export type ItemRollbackFunction<T> = (version?: number) => Promise<T>
 
 export type SchemaFunction = () => Promise<JangleSchema>
 
@@ -167,18 +174,32 @@ export type ProtectedCountFunction = (token: Token, params?: CountParams) => Pro
 export type ProtectedFindFunction<T> = (token: Token, params?: FindParams) => Promise<T[]>
 export type ProtectedGetFunction<T> = (token: Token, id: Id, params?: GetParams) => Promise<T>
 
+export type ProtectedItemGetFunction<T> = (token: Token, params?: GetParams) => Promise<T>
+
 export type ProtectedCreateFunction<T> = (token: Token, newItem: object) => Promise<T>
 export type ProtectedUpdateFunction<T> = (token: Token, id: Id, newItem: object) => Promise<T>
 export type ProtectedPatchFunction<T> = (token: Token, id: Id, newValues: Dict<any>) => Promise<T>
 export type ProtectedRemoveFunction<T> = (token: Token, id: Id) => Promise<T>
-export type ProtectedRestoreFunction<T> = (token: Token, id: Id) => Promise<T>
+
+export type ProtectedItemUpdateFunction<T> = (token: Token, newItem: object) => Promise<T>
+export type ProtectedItemPatchFunction<T> = (token: Token, newValues: Dict<any>) => Promise<T>
 
 export type ProtectedIsLiveFunction = (token: Token, id: Id) => Promise<boolean>
 export type ProtectedPublishFunction<T> = (token: Token, id: Id) => Promise<T>
 export type ProtectedUnpublishFunction<T> = (token: Token, id: Id) => Promise<T>
+
+export type ProtectedItemIsLiveFunction = (token: Token) => Promise<boolean>
+export type ProtectedItemPublishFunction<T> = (token: Token) => Promise<T>
+export type ProtectedItemUnpublishFunction<T> = (token: Token) => Promise<T>
+
 export type ProtectedHistoryFunction = (token: Token, id: Id) => Promise<IHistory[]>
-export type ProtectedPreviewRollbackFunction<T> = (token: Token, id: Id, version: number) => Promise<T>
-export type ProtectedRollbackFunction<T> = (token: Token, id: Id, version: number) => Promise<T>
+export type ProtectedPreviewRollbackFunction<T> = (token: Token, id: Id, version?: number) => Promise<T>
+export type ProtectedRollbackFunction<T> = (token: Token, id: Id, version?: number) => Promise<T>
+
+export type ProtectedItemHistoryFunction = (token: Token) => Promise<IHistory[]>
+export type ProtectedItemPreviewRollbackFunction<T> = (token: Token, version?: number) => Promise<T>
+export type ProtectedItemRollbackFunction<T> = (token: Token, version?: number) => Promise<T>
+
 export type ProtectedSchemaFunction = (token: Token) => Promise<JangleSchema>
 
 export type LiveService = {
@@ -188,7 +209,11 @@ export type LiveService = {
   get: GetFunction<IItem>
 }
 
-export type MetaService<T> = {
+export type ItemLiveService = {
+  get: ItemGetFunction<IItem>
+}
+
+export type MetaListService<T> = {
 
   any: AnyFunction
   count: CountFunction
@@ -199,7 +224,8 @@ export type MetaService<T> = {
   update: UpdateFunction<T>
   patch: PatchFunction<T>
   remove: RemoveFunction<T>
-  restore: RestoreFunction<T>
+
+  schema: SchemaFunction
 
 }
 
@@ -214,7 +240,6 @@ export type ListService<T> = {
   update: UpdateFunction<T>
   patch: PatchFunction<T>
   remove: RemoveFunction<T>
-  restore: RestoreFunction<T>
 
   isLive: IsLiveFunction
   publish: PublishFunction<T>
@@ -230,7 +255,27 @@ export type ListService<T> = {
 
 }
 
-export type ProtectedMetaService<T> = {
+export type ItemService<T> = {
+
+  get: ItemGetFunction<T>
+  update: ItemUpdateFunction<T>
+  patch: ItemPatchFunction<T>
+
+  isLive: ItemIsLiveFunction
+  publish: ItemPublishFunction<T>
+  unpublish: ItemUnpublishFunction<T>
+
+  history: ItemHistoryFunction
+  previewRollback: ItemPreviewRollbackFunction<T>
+  rollback: ItemRollbackFunction<T>
+
+  schema: SchemaFunction
+
+  live: ItemLiveService
+
+}
+
+export type ProtectedMetaListService<T> = {
 
   any: ProtectedAnyFunction
   count: ProtectedCountFunction
@@ -241,7 +286,8 @@ export type ProtectedMetaService<T> = {
   update: ProtectedUpdateFunction<T>
   patch: ProtectedPatchFunction<T>
   remove: ProtectedRemoveFunction<T>
-  restore: ProtectedRestoreFunction<T>
+
+  schema: ProtectedSchemaFunction
 
 }
 
@@ -256,7 +302,6 @@ export type ProtectedListService<T> = {
   update: ProtectedUpdateFunction<T>
   patch: ProtectedPatchFunction<T>
   remove: ProtectedRemoveFunction<T>
-  restore: ProtectedRestoreFunction<T>
 
   isLive: ProtectedIsLiveFunction
   publish: ProtectedPublishFunction<T>
@@ -268,6 +313,26 @@ export type ProtectedListService<T> = {
   rollback: ProtectedRollbackFunction<T>
 
   schema: ProtectedSchemaFunction
+
+}
+
+export type ProtectedItemService<T> = {
+
+  get: ProtectedItemGetFunction<T>
+  update: ProtectedItemUpdateFunction<T>
+  patch: ProtectedItemPatchFunction<T>
+
+  isLive: ProtectedItemIsLiveFunction
+  publish: ProtectedItemPublishFunction<T>
+  unpublish: ProtectedItemUnpublishFunction<T>
+
+  history: ProtectedItemHistoryFunction
+  previewRollback: ProtectedItemPreviewRollbackFunction<T>
+  rollback: ProtectedItemRollbackFunction<T>
+
+  schema: SchemaFunction
+
+  live: ItemLiveService
 
 }
 
@@ -357,10 +422,12 @@ export type StartAsUserFunction =
 
 export type ProtectedJangleCore = {
   lists: Dict<ProtectedListService<IJangleItem>>
+  items: Dict<ProtectedItemService<IJangleItem>>
   auth: Authorization
 }
 
 export type JangleCore = {
   lists: Dict<ListService<IJangleItem>>
+  items: Dict<ItemService<IJangleItem>>
   auth: Authorization
 }

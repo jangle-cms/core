@@ -9,7 +9,7 @@ import services, { errors } from '../services/index'
 import { ObjectId } from 'bson'
 import { debug } from '../utils'
 
-const fail = () => expect(true).to.be.false
+const fail = () => Promise.reject('Operation succeeded...')
 
 describe('core', () => {
   const config: Config = {
@@ -118,7 +118,6 @@ describe('core', () => {
       expect(Example.update).to.be.a('function')
       expect(Example.patch).to.be.a('function')
       expect(Example.remove).to.be.a('function')
-      expect(Example.restore).to.be.a('function')
     })
   
     it('has all publish functions', () => {
@@ -132,7 +131,7 @@ describe('core', () => {
       const Example = Jangle.lists.Example
       expect(Example.history).to.be.a('function')
       expect(Example.previewRollback).to.be.a('function')
-      expect(Example.restore).to.be.a('function')
+      expect(Example.rollback).to.be.a('function')
     })
   
     it('has a live service', () => {
@@ -320,7 +319,6 @@ describe('core', () => {
       expect(Item.jangle.version).to.equal(1)
       expect(Item.jangle.created).to.exist
       expect(Item.jangle.created.by).to.eql(Item.jangle.updated.by)
-      expect(Item.jangle.status).to.equal('visible')
     })
 
   })
@@ -419,6 +417,20 @@ describe('core', () => {
         .catch(reason => expect(reason).to.equal(errors.missingId))
     )
 
+    it('removes item from the collection', () =>
+      Jangle.lists.Example.any(Token)
+        .then(hasAny => expect(hasAny).to.be.false)
+    )
+
+    it('stores the full old item in the history collection', () =>
+      Jangle.lists.Example.history(Token, Item._id)
+        .then(items => items[0])
+        .then((firstItem) => {
+          expect(firstItem.changes).to.exist
+          expect(firstItem.changes.length).to.equal(2)
+        })
+    )
+
     it('returns the old item', () => {
       expect(RemovedItem).to.exist
       expect(RemovedItem.jangle).to.exist
@@ -429,27 +441,28 @@ describe('core', () => {
 
   describe('restore', () => {
 
-    before(() => 
-      Jangle.lists.Example.restore(Token, Item._id)
+    before(() =>
+      Jangle.lists.Example.rollback(Token, Item._id)
         .then(item => { RestoredItem = item })
+        .catch(console.error)
     )
 
     it('requires a token', () =>
-      Jangle.lists.Example.restore(undefined, undefined)
+      Jangle.lists.Example.rollback(undefined, undefined)
         .then(fail)
         .catch(reason => expect(reason).to.equal(authErrors.invalidToken))
     )
 
     it('requires an _id', () =>
-      Jangle.lists.Example.restore(Token, undefined)
+      Jangle.lists.Example.rollback(Token, undefined)
         .then(fail)
         .catch(reason => expect(reason).to.equal(errors.missingId))
     )
 
-    it('returns the old item', () => {
+    it('returns the restored item', () => {
       expect(RestoredItem).to.exist
       expect(RestoredItem.jangle).to.exist
-      expect(RestoredItem.jangle.version).to.equal(4)
+      expect(RestoredItem.jangle.version).to.equal(5)
     })
 
   })
@@ -557,9 +570,22 @@ describe('core', () => {
         .catch(reason => expect(reason).to.equal(errors.missingId))
     )
 
-    it('returns four old versions', () =>
+    it('sorts by version, descending', () =>
       Jangle.lists.Example.history(Token, Item._id)
-        .then(items => expect(items).to.have.length(4))
+        .then(items => items.map(({ version }) => version))
+        .then(versions => versions
+          .reduce(({ isDescending, lastNumber }, number) =>
+            (lastNumber !== undefined && lastNumber < number)
+              ? { isDescending: false, lastNumber }
+              : { isDescending, lastNumber: number }
+          , { isDescending: true, lastNumber: undefined })
+        )
+        .then(({ isDescending }) => expect(isDescending).to.be.true)
+    )
+
+    it('returns three old versions', () =>
+      Jangle.lists.Example.history(Token, Item._id)
+        .then(items => expect(items).to.have.length(3))
     )
 
   })
@@ -576,12 +602,6 @@ describe('core', () => {
       Jangle.lists.Example.previewRollback(Token, undefined, undefined)
         .then(fail)
         .catch(reason => expect(reason).to.equal(errors.missingId))
-    )
-
-    it('requires a version number', () =>
-      Jangle.lists.Example.previewRollback(Token, Item._id, undefined)
-        .then(fail)
-        .catch(reason => expect(reason).to.equal(errors.missingVersionNumber))
     )
 
     it('requires a positive version number', () =>
@@ -634,12 +654,6 @@ describe('core', () => {
       Jangle.lists.Example.rollback(Token, undefined, undefined)
         .then(fail)
         .catch(reason => expect(reason).to.equal(errors.missingId))
-    )
-
-    it('requires a version number', () =>
-      Jangle.lists.Example.rollback(Token, Item._id, undefined)
-        .then(fail)
-        .catch(reason => expect(reason).to.equal(errors.missingVersionNumber))
     )
 
     it('requires a positive version number', () =>

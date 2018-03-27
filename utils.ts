@@ -136,7 +136,8 @@ export const authenticateService = <T>(token: Token, ProtectedListService: Prote
   Object.keys(ProtectedListService)
     .filter(functionName => functionName !== 'live')
     .reduce((service: any, functionName) => {
-      service[functionName] = allowMissingParams(R.curryN(2, (ProtectedListService as any)[functionName])(token))
+      const curriedFunction = R.curryN(2, (ProtectedListService as any)[functionName])
+      service[functionName] = allowMissingParams(curriedFunction(token))
       return service
     }, {
       live: ProtectedListService.live

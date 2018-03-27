@@ -1,10 +1,11 @@
 import {
   Auth, ProtectedJangleCore,
   UserModels, ValidateFunction,
-  MetaModels, ProtectedListService, IJangleItem, Dict, UserModel, Token, AnyParams, ProtectedAnyFunction, CountParams, FindParams, GetParams, Id, IJangleItemInput, Signature, Status, IHistoryDocument, Model,
+  MetaModels, ProtectedListService, IJangleItem, Dict, UserModel, Token, AnyParams, ProtectedAnyFunction, CountParams, FindParams, GetParams, Id, IJangleItemInput, Signature, IHistoryDocument, Model,
   Document,
   JangleSchema,
-  JangleField
+  JangleField,
+  IJangleMeta
 } from '../types'
 import * as R from 'ramda'
 import { reject, debug } from '../utils'
@@ -23,7 +24,6 @@ type ListServices = Dict<ListService>
 export const errors = {
   missingId: 'Must provide an _id.',
   missingItem: 'No item provided.',
-  missingVersionNumber: 'No version number provided.',
   negativeVersionNumber: 'Version must be greater than zero.'
 }
 
@@ -103,27 +103,25 @@ const addCreateMeta = (userId: Id, item: object): IJangleItemInput => {
     ...item,
     jangle: {
       version: 1,
-      status: 'visible',
       created: signature,
       updated: signature
     }
   }
 }
 
-const addUpdateMeta = (userId: Id, oldItem: any, item: any, status?: Status): IJangleItemInput => ({
+const addUpdateMeta = (userId: Id, oldItem: any, item: any): IJangleItemInput => ({
   ...item,
   jangle: {
     ...oldItem.jangle,
     version: oldItem.jangle.version + 1,
-    updated: stamp(userId),
-    status: status || oldItem.jangle.status
+    updated: stamp(userId)
   }
 })
 
 type UpdateConfig = {
   overwrite: boolean
-  status?: Status
   ignoreItem?: boolean
+  removeItem?: boolean
 }
 
 type ModifyContext = {
@@ -131,16 +129,20 @@ type ModifyContext = {
 }
 
 type HistoryContext = {
+  userId: Id
   content: Model<Document>
   history: Model<IHistoryDocument>
 }
 
-const makeCreate = ({ model }: ModifyContext) => (userId: Id, item: object): Promise<IJangleItem> =>
+const makeCreate = (context: ModifyContext) => (userId: Id, item: object): Promise<IJangleItem> =>
   (item)
-    ? model.create(addCreateMeta(userId, item))
-        .then(({ _id }) => makeGet({ model })(_id))
-        .catch(reject)
+    ? makeCreateWithItem(context, addCreateMeta(userId, item))
     : Promise.reject(errors.missingItem)
+
+const makeCreateWithItem = ({ model }: ModifyContext, item: object) =>
+  model.create(item)
+    .then(({ _id }) => makeGet({ model })(_id))
+    .catch(reject)
 
 const makeObjectList = (obj: any) =>
   Object.keys(obj).map(key => ({ [key]: obj[key] }))
@@ -157,8 +159,8 @@ const result = (list: any) =>
 
 const makeHistoryItem = (oldItem: any, newItem: any) =>
   result(R.difference(
-    makeObjectList({ ...oldItem, jangle: undefined }),
-    makeObjectList({ ...newItem, jangle: undefined })
+    makeObjectList({ ...oldItem, jangle: undefined, _id: undefined }),
+    makeObjectList({ ...newItem, jangle: undefined, _id: undefined })
   ))
 
 const createHistoryItem = ({ history }: HistoryContext, oldItem: IJangleItem) =>
@@ -166,14 +168,13 @@ const createHistoryItem = ({ history }: HistoryContext, oldItem: IJangleItem) =>
     history.create({
       itemId: oldItem._id,
       version: oldItem.jangle.version,
-      status: oldItem.jangle.status,
       updated: oldItem.jangle.updated,
       changes: makeHistoryItem(oldItem, newItem)
     })
       .then((_historyItem: any) => newItem)
       .catch(reject) as any
 
-const makeUpdateFunction = ({ overwrite, status, ignoreItem }: UpdateConfig) =>
+const makeUpdateFunction = ({ overwrite, ignoreItem, removeItem }: UpdateConfig) =>
   ({ content, history }: HistoryContext, userId: Id, id: Id, newItem?: object): Promise<IJangleItem> =>
     (id == null)
       ? Promise.reject(errors.missingId)
@@ -184,7 +185,7 @@ const makeUpdateFunction = ({ overwrite, status, ignoreItem }: UpdateConfig) =>
           .then((oldItem: any) =>
             content.findByIdAndUpdate(
               id,
-              addUpdateMeta(userId, oldItem, newItem, status), {
+              addUpdateMeta(userId, oldItem, newItem), {
                 runValidators: true,
                 overwrite,
                 setDefaultsOnInsert: true
@@ -198,8 +199,17 @@ const makeUpdateFunction = ({ overwrite, status, ignoreItem }: UpdateConfig) =>
                   .exec()
               )
               .then(updatedItem =>
-                createHistoryItem({ history, content }, oldItem)(updatedItem)
-                  .then(_ => oldItem)
+                removeItem
+                  ? createHistoryItem({ history, content, userId }, oldItem)({})
+                      .then(_ => oldItem)
+                  : createHistoryItem({ history, content, userId }, oldItem)(updatedItem)
+                    .then(_ => oldItem)
+              )
+              .then(item => (removeItem)
+                ? content.findByIdAndRemove(id).lean()
+                    .exec()
+                    .then(_ => item)
+                : item
               )
               .catch(reject)
           )
@@ -208,8 +218,7 @@ const makeUpdateFunction = ({ overwrite, status, ignoreItem }: UpdateConfig) =>
 
 const makeUpdate = makeUpdateFunction({ overwrite: true })
 const makePatch = makeUpdateFunction({ overwrite: false })
-const makeRemove = makeUpdateFunction({ overwrite: false, status: 'hidden', ignoreItem: true })
-const makeRestore = makeUpdateFunction({ overwrite: false, status: 'visible', ignoreItem: true })
+const makeRemove = makeUpdateFunction({ overwrite: false, ignoreItem: true, removeItem: true })
 
 type PublishContext = {
   content: Model<Document>
@@ -253,12 +262,13 @@ const makeUnpublish = ({ live }: PublishContext, id: Id): Promise<IJangleItem> =
 const makeHistory = ({ history }: HistoryContext, id: Id): Promise<IHistoryDocument[]> =>
   id
     ? history.find({ itemId: id })
+        .sort('-version')
         .lean()
         .exec()
         .catch(reject) as any
     : Promise.reject(errors.missingId)
 
-const buildOldItem = ([historyItems, currentItem]: any): Promise<any> =>
+const buildOldItem = (userId : Id) => ([ historyItems, currentItem ]: any): Promise<any> =>
   historyItems.reduce((item: any, { changes }: any) => {
     changes.forEach(({ field, oldValue }: any) => {
       item[field] = oldValue
@@ -268,25 +278,39 @@ const buildOldItem = ([historyItems, currentItem]: any): Promise<any> =>
     ...currentItem,
     jangle: {
       ...currentItem.jangle,
+      updated: stamp(userId),
       version: currentItem.jangle.version + 1
     }
   })
 
-const makeHistoryPreview = ({ history, content }: HistoryContext, id: Id, version: number): Promise<IJangleItem> =>
+const makeItemFrom = (userId: Id, historyItems: IHistoryDocument[]) => ({
+  jangle: {
+    created: stamp(userId),
+    updated: stamp(userId),
+    version: historyItems[0].version + 1
+  }
+})
+
+const makeHistoryPreview = ({ userId, history, content }: HistoryContext, id: Id, version?: number): Promise<IJangleItem> =>
   (id === undefined) ?
     Promise.reject(errors.missingId)
-  : (version === undefined) ?
-    Promise.reject(errors.missingVersionNumber)
-  : (version < 1) ?
+  : (version !== undefined && version < 1) ?
     Promise.reject(errors.negativeVersionNumber)
   : Promise.all([
-      history.find({ itemId: id, version: { $gte: version } })
+      history.find(version
+        ? { itemId: id, version: { $gte: version } }
+        : { itemId: id }
+      )
         .sort('-version')
+        .limit(version ? undefined as any : 1)
         .lean()
         .exec(),
       content.findById(id).lean().exec()
     ])
-      .then(buildOldItem)
+      .then(([ historyItems, currentItem ]) => currentItem
+        ? buildOldItem(userId)([ historyItems, currentItem ])
+        : buildOldItem(userId)([ historyItems, makeItemFrom(userId, historyItems as IHistoryDocument[]) ])
+      )
       .catch(reject) as any
 
 const excludeNames = (names: string[]) => ({ name }: JangleField) : boolean =>
@@ -327,19 +351,27 @@ const initializeListService = (validate: ValidateFunction, { content, live, hist
     get: (token, id, params) => validate(token).then(_id => makeGet({ model: content })(id, params)),
 
     create: (token, newItem) => validate(token).then(userId => makeCreate({ model: content })(userId, newItem)),
-    update: (token, id, newItem) => validate(token).then(userId => makeUpdate({ content, history }, userId, id, newItem)),
-    patch: (token, id, newValues) => validate(token).then(userId => makePatch({ content, history }, userId, id, newValues)),
-
-    remove: (token, id) => validate(token).then(userId => makeRemove({ content, history }, userId, id)),
-    restore: (token, id) => validate(token).then(userId => makeRestore({ history, content }, userId, id)),
+    update: (token, id, newItem) => validate(token).then(userId => makeUpdate({ content, history, userId }, userId, id, newItem)),
+    patch: (token, id, newValues) => validate(token).then(userId => makePatch({ content, history, userId }, userId, id, newValues)),
+    remove: (token, id) => validate(token).then(userId => makeRemove({ content, history, userId }, userId, id)),
 
     isLive: (token, id) => validate(token).then(_ => makeIsLive({ content, live }, id)),
     publish: (token, id) => validate(token).then(_ => makePublish({ content, live }, id)),
     unpublish: (token, id) => validate(token).then(_ => makeUnpublish({ content, live }, id)),
 
-    history: (token, id) => validate(token).then(_ => makeHistory({ history, content }, id)),
-    previewRollback: (token, id, version) => validate(token).then(_ => makeHistoryPreview({ history, content }, id, version)),
-    rollback: (token, id, version) => validate(token).then(_ => makeHistoryPreview({ history, content }, id, version).then(newItem => service.update(token, id, newItem))),
+    history: (token, id) => validate(token).then(userId => makeHistory({ history, content, userId }, id)),
+    previewRollback: (token, id, version) => validate(token).then(userId => makeHistoryPreview({ userId, history, content }, id, version)),
+    rollback: (token, id, version) =>
+      validate(token)
+        .then(userId => Promise.all([
+          makeHistoryPreview({ userId, history, content }, id, version),
+          service.any(token, { where: { _id: id } })
+        ]))
+        .then(([ newItem, hasExistingItem ]) =>
+          hasExistingItem
+            ? service.update(token, id, newItem)
+            : makeCreateWithItem({ model: content }, { ...newItem, _id: id })
+        ),
 
     schema: (token) => validate(token).then(_ => makeSchema(content)),
 

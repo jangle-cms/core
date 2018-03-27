@@ -1,6 +1,5 @@
 import { Schema } from 'mongoose'
 import AuthorSignature from './Signature'
-import { statuses } from '../../types'
 const Types = Schema.Types
 
 const Change = new Schema({
@@ -26,14 +25,6 @@ export default new Schema({
     type: Number,
     min: 1,
     required: [ true, 'Version is required.' ]
-  },
-  status: {
-    type: String,
-    required: [ true, 'Status is required.' ],
-    enum: {
-      values: statuses,
-      message: `Status should be one of: '${statuses.join(`', '`)}'`
-    }
   },
   updated: {
     type: AuthorSignature('updated'),
