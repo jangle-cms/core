@@ -5,21 +5,30 @@ import {
   Document,
   JangleSchema,
   JangleField,
-  IJangleMeta
+  IJangleMeta,
+  ProtectedItemService
 } from '../types'
 import * as R from 'ramda'
 import { reject, debug } from '../utils'
-import { Schema } from 'mongoose'
+import { Schema, Query } from 'mongoose'
 import * as pluralize from 'pluralize'
 
-type InitializeServicesConfig = {
-  userModels: UserModels
+type InitializeListServicesConfig = {
+  listModels: UserModels
+  validate: ValidateFunction
+  jangleModels: MetaModels
+}
+
+type InitializeItemServicesConfig = {
+  itemModels: UserModels
   validate: ValidateFunction
   jangleModels: MetaModels
 }
 
 type ListService = ProtectedListService<IJangleItem>
 type ListServices = Dict<ListService>
+type ItemService = ProtectedItemService<IJangleItem>
+type ItemServices = Dict<ItemService>
 
 export const errors = {
   missingId: 'Must provide an _id.',
@@ -27,10 +36,16 @@ export const errors = {
   negativeVersionNumber: 'Version must be greater than zero.'
 }
 
-const initializeListServices = ({ userModels, validate }: InitializeServicesConfig): ListServices =>
-  userModels.reduce((services: ListServices, userModel) => {
-    services[userModel.modelName] = initializeListService(validate, userModel)
-    return services
+const initializeListServices = ({ listModels, validate }: InitializeListServicesConfig): ListServices =>
+  listModels.reduce((lists: ListServices, model) => {
+    lists[model.modelName] = initializeListService(validate, model)
+    return lists
+  }, {})
+
+const initializeItemServices = ({ itemModels, validate }: InitializeItemServicesConfig): ItemServices =>
+  itemModels.reduce((items: ItemServices, model) => {
+    items[model.modelName] = initializeItemService(model.modelName, validate, model)
+    return items
   }, {})
 
 const makeAny = ({ model }: { model: Model<Document> }) => (params?: AnyParams): Promise<boolean> =>
@@ -69,27 +84,26 @@ const makeFind = ({ model }: { model: Model<Document> }) => (params?: FindParams
     .catch(reject) as any
 }
 
-const makeGet = ({ model }: { model: Model<Document> }) => (_id: Id, params?: GetParams): Promise<IJangleItem> => {
-  if (_id == null) {
-    return Promise.reject(errors.missingId)
-  } else {
-    let query = model.findOne({ _id })
+const makeGet = (query: Query<any>, params?: GetParams): Promise<any> => {
+  if (params) {
+    query = query
+      .select(params.select ? params.select : undefined as any)
 
-    if (params) {
-      query = query
-        .select(params.select ? params.select : undefined as any)
-
-      if (params.populate) {
-        query = query.populate(params.populate)
-      }
+    if (params.populate) {
+      query = query.populate(params.populate)
     }
-
-    return query
-      .lean()
-      .exec()
-      .catch(reject) as any
   }
+
+  return query
+    .lean()
+    .exec()
+    .catch(reject) as any
 }
+
+const makeListGet = ({ model }: { model: Model<Document> }) => (_id: Id, params?: GetParams): Promise<IJangleItem> =>
+  (_id == null)
+    ? Promise.reject(errors.missingId)
+    : makeGet(model.findOne({ _id }), params)
 
 const stamp = (id: Id): Signature => ({
   by: id,
@@ -141,7 +155,7 @@ const makeCreate = (context: ModifyContext) => (userId: Id, item: object): Promi
 
 const makeCreateWithItem = ({ model }: ModifyContext, item: object) =>
   model.create(item)
-    .then(({ _id }) => makeGet({ model })(_id))
+    .then(({ _id }) => makeListGet({ model })(_id))
     .catch(reject)
 
 const makeObjectList = (obj: any) =>
@@ -220,19 +234,34 @@ const makeUpdate = makeUpdateFunction({ overwrite: true })
 const makePatch = makeUpdateFunction({ overwrite: false })
 const makeRemove = makeUpdateFunction({ overwrite: false, ignoreItem: true, removeItem: true })
 
+const makeItemUpdate = (modelName: string, context : HistoryContext, newItem?: object) =>
+  context.content.findOne({ modelName })
+    .lean()
+    .exec()
+    .then(({ _id } : any) => makeUpdate(context, context.userId, _id, newItem))
+
+const makeItemPatch = (modelName: string, context : HistoryContext, newItem?: object) =>
+  context.content.findOne({ modelName })
+    .lean()
+    .exec()
+    .then(({ _id } : any) => makePatch(context, context.userId, _id, newItem))
+
 type PublishContext = {
   content: Model<Document>
   live: Model<Document>
 }
 
-const makeIsLive = ({ live }: PublishContext, id: Id): Promise<boolean> =>
-  (id)
-    ? live.count({ _id: id })
-      .lean()
-      .exec()
-      .then((count: any) => count > 0)
-      .catch(reject)
+const makeListIsLive = ({ live }: PublishContext, id: Id): Promise<boolean> =>
+  id
+    ? makeIsLive(live.count({ _id: id }))
     : Promise.reject(errors.missingId)
+
+const makeIsLive = (query : Query<any>) : Promise<boolean> =>
+  query
+    .lean()
+    .exec()
+    .then((count: any) => count > 0)
+    .catch(reject)
 
 const stripJangleMeta = (doc: any): any => {
   const newDoc = { ...doc }
@@ -342,20 +371,57 @@ const makeSchema = (content: Model<Document>) : JangleSchema => {
   }
 }
 
+const initializeItemService = (modelName: string, validate: ValidateFunction, { content, live, history }: UserModel): ItemService => {
+  const service : ItemService = {
+
+    get: (token, params) => validate(token).then(_ => makeGet(content.findOne({ modelName }), params)),
+
+    update: (token, newItem) => validate(token).then(userId => makeItemUpdate(modelName, { content, userId, history }, newItem)),
+    patch: (token, newItem) => validate(token).then(userId => makeItemPatch(modelName, { content, userId, history }, newItem)),
+
+    isLive: (token) => validate(token).then(_ => makeIsLive(live.count({ modelName }))),
+    publish: (token) => validate(token).then(_ => makePublish({ content, live })),
+    unpublish: (token) => validate(token).then(_ => makeUnpublish({ content, live })),
+
+    history: (token) => validate(token).then(userId => makeHistory({ history, content, userId }, id)),
+    previewRollback: (token, version) => validate(token).then(userId => makeHistoryPreview({ userId, history, content }, id, version)),
+    rollback: (token, version) =>
+      validate(token)
+        .then(userId => Promise.all([
+          makeHistoryPreview({ userId, history, content }, id, version),
+          service.any(token, { where: { _id: id } })
+        ]))
+        .then(([ newItem, hasExistingItem ]) =>
+          hasExistingItem
+            ? service.update(token, id, newItem)
+            : makeCreateWithItem({ model: content }, { ...newItem, _id: id })
+        ),
+
+    schema: (token) => validate(token).then(_ => makeSchema(content)),
+
+    live: {
+      get: (params) => makeGet(content.findOne({ modelName }), params)
+    }
+  }
+
+  return service
+}
+
 const initializeListService = (validate: ValidateFunction, { content, live, history }: UserModel): ListService => {
 
   const service : ListService = {
+
     any: (token, params) => validate(token).then(_id => makeAny({ model: content })(params)),
     count: (token, params) => validate(token).then(_id => makeCount({ model: content })(params)),
     find: (token, params) => validate(token).then(_id => makeFind({ model: content })(params)),
-    get: (token, id, params) => validate(token).then(_id => makeGet({ model: content })(id, params)),
+    get: (token, id, params) => validate(token).then(_id => makeListGet({ model: content })(id, params)),
 
     create: (token, newItem) => validate(token).then(userId => makeCreate({ model: content })(userId, newItem)),
     update: (token, id, newItem) => validate(token).then(userId => makeUpdate({ content, history, userId }, userId, id, newItem)),
     patch: (token, id, newValues) => validate(token).then(userId => makePatch({ content, history, userId }, userId, id, newValues)),
     remove: (token, id) => validate(token).then(userId => makeRemove({ content, history, userId }, userId, id)),
 
-    isLive: (token, id) => validate(token).then(_ => makeIsLive({ content, live }, id)),
+    isLive: (token, id) => validate(token).then(_ => makeListIsLive({ content, live }, id)),
     publish: (token, id) => validate(token).then(_ => makePublish({ content, live }, id)),
     unpublish: (token, id) => validate(token).then(_ => makeUnpublish({ content, live }, id)),
 
@@ -379,19 +445,20 @@ const initializeListService = (validate: ValidateFunction, { content, live, hist
       any: makeAny({ model: live }),
       count: makeCount({ model: live }),
       find: makeFind({ model: live }),
-      get: makeGet({ model: live })
+      get: makeListGet({ model: live })
     }
   }
 
   return service
 }
 
-const initialize = ({ auth, userModels, validate, jangleModels }: Auth): Promise<ProtectedJangleCore> =>
+const initialize = ({ auth, listModels, itemModels, validate, jangleModels }: Auth): Promise<ProtectedJangleCore> =>
   Promise.all([
     Promise.resolve(auth),
-    initializeListServices({ userModels, validate, jangleModels })
+    initializeListServices({ listModels, validate, jangleModels }),
+    initializeItemServices({ itemModels, validate, jangleModels })
   ])
-    .then(([ auth, lists ]) => ({ auth, lists }))
+    .then(([ auth, lists, items ]) => ({ auth, lists, items }))
     .catch(reject)
 
 export default {

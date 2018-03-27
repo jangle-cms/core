@@ -330,7 +330,7 @@ export type ProtectedItemService<T> = {
   previewRollback: ProtectedItemPreviewRollbackFunction<T>
   rollback: ProtectedItemRollbackFunction<T>
 
-  schema: SchemaFunction
+  schema: ProtectedSchemaFunction
 
   live: ItemLiveService
 
@@ -351,8 +351,9 @@ export type Authorization = {
 
 export type Auth = {
   validate: ValidateFunction
-  auth: Authorization,
-  userModels: UserModels,
+  auth: Authorization
+  listModels: UserModels
+  itemModels: UserModels
   jangleModels: MetaModels
 }
 
