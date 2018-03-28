@@ -82,11 +82,12 @@ const makeAuthorization = (context: AuthContext): Authorization => ({
   hasInitialAdmin: makeHasInitialAdmin(context.User)
 })
 
-const initialize = ({ secret, userModels, jangleModels: { User }, jangleModels }: Models): Promise<Auth> =>
+const initialize = ({ secret, listModels, itemModels, jangleModels: { User }, jangleModels }: Models): Promise<Auth> =>
   Promise.resolve({
     validate: makeValidate({ secret, User }),
     auth: makeAuthorization({ secret, User }),
-    userModels,
+    listModels,
+    itemModels,
     jangleModels
   })
 

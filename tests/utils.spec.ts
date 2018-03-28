@@ -548,7 +548,7 @@ describe('utils', () => {
     }
 
     it('works with no initial admin', () => {
-      authenticateCore({ email: 'ryan@jangle.com', password: 'password' })({ auth, lists: {} })
+      authenticateCore({ email: 'ryan@jangle.com', password: 'password' })({ auth, lists: {}, items: {} })
         .then(({ auth, lists }) => {
           expect(auth).to.exist
           expect(lists).to.exist
@@ -556,7 +556,7 @@ describe('utils', () => {
     })
 
     it('works with an initial admin', () => {
-      authenticateCore({ email: 'ryan@jangle.com', password: 'password' })({ auth, lists: {} })
+      authenticateCore({ email: 'ryan@jangle.com', password: 'password' })({ auth, lists: {}, items: {} })
         .then(({ auth, lists }) => {
           expect(auth).to.exist
           expect(lists).to.exist

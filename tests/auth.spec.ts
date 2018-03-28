@@ -44,7 +44,7 @@ describe('auth', () => {
   )
 
   it('still has user models', () =>
-    expect(Auth.userModels.length).to.equal(numberOfUserModels)
+    expect(Auth.listModels.length).to.equal(numberOfUserModels)
   )
 
   it('still has jangle user model', () =>

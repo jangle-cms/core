@@ -269,32 +269,40 @@ const stripJangleMeta = (doc: any): any => {
   return newDoc
 }
 
-const makePublish = ({ content, live }: PublishContext, id: Id): Promise<IJangleItem> =>
-  (id)
-    ? content
-        .findOne({ _id: id })
-        .lean()
-        .exec()
-        .then(stripJangleMeta)
-        .then(doc => live.create(doc))
-        .catch(reject) as any
+const makePublish = (live: Model<Document>, query: Query<any>) : Promise<IJangleItem> =>
+  query
+    .lean()
+    .exec()
+    .then(stripJangleMeta)
+    .then(doc => live.create(doc))
+    .catch(reject) as any
+
+const makeListPublish = ({ content, live }: PublishContext, id: Id): Promise<IJangleItem> =>
+  id
+    ? makePublish(live, content.findOne({ _id: id }))
     : Promise.reject(errors.missingId)
 
-const makeUnpublish = ({ live }: PublishContext, id: Id): Promise<IJangleItem> =>
+const makeUnpublish = (query: Query<any>) : Promise<IJangleItem> =>
+  query
+    .lean()
+    .exec()
+    .catch(reject) as any
+
+const makeListUnpublish = ({ live }: PublishContext, id: Id): Promise<IJangleItem> =>
   id
-    ? live.findByIdAndRemove(id)
-        .lean()
-        .exec()
-        .catch(reject) as any
+    ? makeUnpublish(live.findByIdAndRemove(id))
     : Promise.reject(errors.missingId)
 
-const makeHistory = ({ history }: HistoryContext, id: Id): Promise<IHistoryDocument[]> =>
+const makeHistory = (query: Query<any>) : Promise<IHistoryDocument[]> =>
+  query
+    .sort('-version')
+    .lean()
+    .exec()
+    .catch(reject) as any
+
+const makeListHistory = ({ history }: HistoryContext, id: Id): Promise<IHistoryDocument[]> =>
   id
-    ? history.find({ itemId: id })
-        .sort('-version')
-        .lean()
-        .exec()
-        .catch(reject) as any
+    ? makeHistory(history.find({ itemId: id }))
     : Promise.reject(errors.missingId)
 
 const buildOldItem = (userId : Id) => ([ historyItems, currentItem ]: any): Promise<any> =>
@@ -320,27 +328,46 @@ const makeItemFrom = (userId: Id, historyItems: IHistoryDocument[]) => ({
   }
 })
 
-const makeHistoryPreview = ({ userId, history, content }: HistoryContext, id: Id, version?: number): Promise<IJangleItem> =>
-  (id === undefined) ?
-    Promise.reject(errors.missingId)
-  : (version !== undefined && version < 1) ?
-    Promise.reject(errors.negativeVersionNumber)
-  : Promise.all([
+const makeHistoryPreview = (historyItemsQuery : Query<any>, currentItemQuery: Query<any>, userId: Id, version?: number): Promise<IJangleItem> =>
+    (version !== undefined && version < 1)
+      ? Promise.reject(errors.negativeVersionNumber)
+      : Promise.all([
+          historyItemsQuery
+            .sort('-version')
+            .limit(version ? undefined as any : 1)
+            .lean()
+            .exec(),
+          currentItemQuery.lean().exec()
+        ])
+          .then(([ historyItems, currentItem ]) => currentItem
+            ? buildOldItem(userId)([ historyItems, currentItem ])
+            : buildOldItem(userId)([ historyItems, makeItemFrom(userId, historyItems as IHistoryDocument[]) ])
+          )
+          .catch(reject) as any
+
+const makeItemHistoryPreview = (modelName: string, history: Model<Document>, content: Model<Document>, userId: Id, version?: number) =>
+  makeHistoryPreview(
+    history.find(version
+      ? { modelName, version: { $gte: version } }
+      : { modelName }
+    ),
+    content.findOne({ modelName }),
+    userId,
+    version
+  )
+
+const makeListHistoryPreview = ({ userId, history, content }: HistoryContext, id: Id, version?: number): Promise<IJangleItem> =>
+  (id === undefined)
+    ? Promise.reject(errors.missingId)
+    : makeHistoryPreview(
       history.find(version
         ? { itemId: id, version: { $gte: version } }
         : { itemId: id }
-      )
-        .sort('-version')
-        .limit(version ? undefined as any : 1)
-        .lean()
-        .exec(),
-      content.findById(id).lean().exec()
-    ])
-      .then(([ historyItems, currentItem ]) => currentItem
-        ? buildOldItem(userId)([ historyItems, currentItem ])
-        : buildOldItem(userId)([ historyItems, makeItemFrom(userId, historyItems as IHistoryDocument[]) ])
-      )
-      .catch(reject) as any
+      ),
+      content.findById(id),
+      userId,
+      version
+    )
 
 const excludeNames = (names: string[]) => ({ name }: JangleField) : boolean =>
   names.indexOf(name) === -1
@@ -380,27 +407,20 @@ const initializeItemService = (modelName: string, validate: ValidateFunction, { 
     patch: (token, newItem) => validate(token).then(userId => makeItemPatch(modelName, { content, userId, history }, newItem)),
 
     isLive: (token) => validate(token).then(_ => makeIsLive(live.count({ modelName }))),
-    publish: (token) => validate(token).then(_ => makePublish({ content, live })),
-    unpublish: (token) => validate(token).then(_ => makeUnpublish({ content, live })),
+    publish: (token) => validate(token).then(_ => makePublish(live, content.findOne({ modelName }))),
+    unpublish: (token) => validate(token).then(_ => makeUnpublish(live.findOneAndRemove({ modelName }))),
 
-    history: (token) => validate(token).then(userId => makeHistory({ history, content, userId }, id)),
-    previewRollback: (token, version) => validate(token).then(userId => makeHistoryPreview({ userId, history, content }, id, version)),
+    history: (token) => validate(token).then(_ => makeHistory(history.find({ modelName }))),
+    previewRollback: (token, version) => validate(token).then(userId => makeItemHistoryPreview(modelName, history, content, userId, version)),
     rollback: (token, version) =>
       validate(token)
-        .then(userId => Promise.all([
-          makeHistoryPreview({ userId, history, content }, id, version),
-          service.any(token, { where: { _id: id } })
-        ]))
-        .then(([ newItem, hasExistingItem ]) =>
-          hasExistingItem
-            ? service.update(token, id, newItem)
-            : makeCreateWithItem({ model: content }, { ...newItem, _id: id })
-        ),
+        .then(userId => makeItemHistoryPreview(modelName, history, content, userId, version))
+        .then((newItem) => service.update(token, newItem)),
 
     schema: (token) => validate(token).then(_ => makeSchema(content)),
 
     live: {
-      get: (params) => makeGet(content.findOne({ modelName }), params)
+      get: (params) => makeGet(live.findOne({ modelName }), params)
     }
   }
 
@@ -422,15 +442,15 @@ const initializeListService = (validate: ValidateFunction, { content, live, hist
     remove: (token, id) => validate(token).then(userId => makeRemove({ content, history, userId }, userId, id)),
 
     isLive: (token, id) => validate(token).then(_ => makeListIsLive({ content, live }, id)),
-    publish: (token, id) => validate(token).then(_ => makePublish({ content, live }, id)),
-    unpublish: (token, id) => validate(token).then(_ => makeUnpublish({ content, live }, id)),
+    publish: (token, id) => validate(token).then(_ => makeListPublish({ content, live }, id)),
+    unpublish: (token, id) => validate(token).then(_ => makeListUnpublish({ content, live }, id)),
 
-    history: (token, id) => validate(token).then(userId => makeHistory({ history, content, userId }, id)),
-    previewRollback: (token, id, version) => validate(token).then(userId => makeHistoryPreview({ userId, history, content }, id, version)),
+    history: (token, id) => validate(token).then(userId => makeListHistory({ history, content, userId }, id)),
+    previewRollback: (token, id, version) => validate(token).then(userId => makeListHistoryPreview({ userId, history, content }, id, version)),
     rollback: (token, id, version) =>
       validate(token)
         .then(userId => Promise.all([
-          makeHistoryPreview({ userId, history, content }, id, version),
+          makeListHistoryPreview({ userId, history, content }, id, version),
           service.any(token, { where: { _id: id } })
         ]))
         .then(([ newItem, hasExistingItem ]) =>

@@ -101,24 +101,24 @@ describe('models', () => {
     })
 
     it('has user model names that match schema keys', () => {
-      const userModelNames = result.userModels.map(model => model.modelName)
+      const userModelNames = result.listModels.map(model => model.modelName)
       expect(userModelNames).to.eql(Object.keys(lists))
     })
 
     it('has a content model', () => {
-      const model = result.userModels.map(model => model.content)[0]
+      const model = result.listModels.map(model => model.content)[0]
       expect(model).to.exist
       expect(model.update).to.be.a('function')
     })
 
     it('has a live model', () => {
-      const model = result.userModels.map(model => model.live)[0]
+      const model = result.listModels.map(model => model.live)[0]
       expect(model).to.exist
       expect(model.update).to.be.a('function')
     })
 
     it('has a history model', () => {
-      const model = result.userModels.map(model => model.history)[0]
+      const model = result.listModels.map(model => model.history)[0]
       expect(model).to.exist
       expect(model.modelName).contains('JangleHistory')
       expect(model.collection.name).contains('jangle.history.')

@@ -100,7 +100,8 @@ export type MetaModels = {
 
 export type Models = {
   secret: string 
-  userModels: UserModels
+  listModels: UserModels
+  itemModels: UserModels
   jangleModels: MetaModels
 }
 
@@ -390,7 +391,7 @@ export type MongoConnections = {
 }
 
 export type InitializeUserModelsContext = {
-  userSchemas: Dict<Schema>
+  schemas: Dict<Schema>
   connections: MongoConnections
   Meta: Schema
 }

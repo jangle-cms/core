@@ -34,17 +34,30 @@ export const getLiveSchema = (schema: Schema): Schema => {
   return liveSchema
 }
 
-const getUserModels = ({ userSchemas, connections, Meta }: InitializeUserModelsContext): UserModels =>
-  Object.keys(userSchemas)
+const getListModels = ({ schemas, connections, Meta }: InitializeUserModelsContext): UserModels =>
+  Object.keys(schemas)
     .map((modelName) => {
-      const schema = userSchemas[modelName]
+      const schema = schemas[modelName]
       const history = connections.content.model(`JangleHistory${modelName}`, History, `jangle.history.${toCollectionName(modelName)}`)
-      history.collection.name = history.collection.name.split('janglehistory').join('jangle.history.')
 
       return {
         modelName,
         content: connections.content.model(modelName, getContentSchema(Meta, schema), toCollectionName(modelName)),
         live: connections.live.model(modelName, getLiveSchema(schema), toCollectionName(modelName)),
+        history: history as any
+      }
+    })
+
+const getItemModels = ({ schemas, connections, Meta }: InitializeUserModelsContext): UserModels =>
+  Object.keys(schemas)
+    .map((modelName) => {
+      const schema = schemas[modelName]
+      const history = connections.content.model(`JangleHistoryItems`, History, `jangle.history.items`)
+
+      return {
+        modelName,
+        content: connections.content.model(`JangleItems${modelName}`, getContentSchema(Meta, schema), `jangle.items`),
+        live: connections.live.model(`JangleItems${modelName}`, getLiveSchema(schema), `jangle.items`),
         history: history as any
       }
     })
@@ -76,22 +89,22 @@ const initializeJangleModels = ({ connections, schemas }: InitializeJangleModels
 
 const initializeModels = ({ config, Meta }: InitializeModelConfig) => (connections : MongoConnections): Promise<Models> =>
   Promise.all([
-    Promise.resolve(
-      getUserModels({ userSchemas: config.lists, connections, Meta })
-    )
-      .then(initializeUserModels)
-      .catch(reject),
+    Promise.resolve(getListModels({ schemas: config.lists, connections, Meta }))
+      .then(initializeUserModels),
+    Promise.resolve(getItemModels({ schemas: config.items, connections, Meta }))
+      .then(initializeUserModels),
     initializeJangleModels({
-      connections, 
-      schemas: {     
+      connections,
+      schemas: {
         User: User,
         History: History
       }
     })
   ])
-    .then(([ userModels, jangleModels ]) => ({
+    .then(([ listModels, itemModels, jangleModels ]) => ({
       secret: config.secret,
-      userModels,
+      listModels,
+      itemModels,
       jangleModels
     }))
     .catch(reject)
