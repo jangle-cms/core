@@ -14,7 +14,11 @@ export default new Schema({
     updated: {
       type: AuthorSignature('updated'),
       required: [ true, 'Need to track item updates.' ]
-    }
+    },
+    model: {
+      type: String,
+      required: false
+    },
   }, {
     _id: false,
     versionKey: false

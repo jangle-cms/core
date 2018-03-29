@@ -66,6 +66,13 @@ export interface IJangleMeta {
   updated: Signature
 }
 
+export interface IJangleItemMeta {
+  version: number
+  created: Signature
+  updated: Signature
+  model: string
+}
+
 export interface IJangleItem {
   _id: any
   jangle: IJangleMeta

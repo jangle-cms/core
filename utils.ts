@@ -1,5 +1,5 @@
 import * as crypto from 'crypto'
-import { Config, Dict, UserConfig, ProtectedListService, ListService, Token, ProtectedJangleCore, JangleCore } from './types'
+import { Config, Dict, UserConfig, ProtectedListService, ListService, Token, ProtectedJangleCore, JangleCore, Id, Signature } from './types'
 import { Schema } from 'mongoose'
 import * as bcrypt from 'bcrypt'
 import * as pluralize from 'pluralize'
@@ -9,6 +9,11 @@ export const debug = (thing: any) => {
   console.log(thing)
   return thing
 }
+
+export const stamp = (id: Id): Signature => ({
+  by: id,
+  at: new Date(Date.now())
+})
 
 export const toCollectionName = (thing: string) => pluralize.plural(thing).toLocaleLowerCase();
 

@@ -1,7 +1,8 @@
-import { Config, Dict, MongoUris, Models, UserModels, MetaModels, ModelsNodeContext, MongoConnections, InitializeUserModelsContext, InitializeJangleModelsConfig, InitializeModelConfig, ModelsContext, Schema } from '../types'
+import { Config, Dict, MongoUris, Models, UserModels, MetaModels, ModelsNodeContext, MongoConnections, InitializeUserModelsContext, InitializeJangleModelsConfig, InitializeModelConfig, ModelsContext, Schema, UserModel, IJangleMeta, IJangleItem, IJangleItemMeta } from '../types'
 import { Meta, User, History } from './schemas'
 import * as mongoose from 'mongoose'
-import { reject, debug, toCollectionName } from '../utils'
+import { reject, debug, toCollectionName, stamp } from '../utils'
+import { Model } from 'mongoose';
 
 export const errors = {
   badUri: 'Could not connect to MongoDB.'
@@ -78,6 +79,50 @@ const initializeUserModels = (userModels: UserModels): Promise<UserModels> =>
       .catch(reject)
   ))
 
+const jangleAdminEmail =
+  'admin@jangle.io'
+
+const findAdmin = (JangleUser: Model<any>) =>
+  JangleUser.findOne({ email: jangleAdminEmail })
+
+const createJangleAdmin = (JangleUser: Model<any>) : Promise<IJangleItem> =>
+  findAdmin(JangleUser)
+    .lean()
+    .exec()
+    .then(admin => admin
+      ? admin
+      : JangleUser.collection
+          .insertOne({
+            email: jangleAdminEmail,
+            role: 'jangle'
+          })
+          .then(_ => findAdmin(JangleUser)) as any
+    )
+
+const createWithoutDefaults = (model: Model<any>, modelName: string, jangle: IJangleItemMeta) =>
+  model.updateOne({ 'jangle.model': modelName }, { jangle }, { upsert: true })
+
+const createItems = (JangleUser: Model<any>, models: UserModels) =>
+  createJangleAdmin(JangleUser)
+    .then((admin: any) => Promise.all(models.map(({ modelName, content }) => {
+      const jangle : IJangleItemMeta = {
+        model: modelName,
+        version: 1,
+        created: stamp(admin._id),
+        updated: stamp(admin._id)
+      }
+      return content
+        .count({ 'jangle.model': modelName })
+        .lean()
+        .exec()
+        .then((count: any) => (count === 0)
+          ? createWithoutDefaults(content, modelName, jangle)
+          : Promise.resolve(undefined)
+        )
+    })))
+    .then(_ => models)
+    .catch(reject)
+
 const initializeJangleModels = ({ connections, schemas }: InitializeJangleModelsConfig): Promise<MetaModels> =>
   Promise.all([
     (connections.content.model('JangleUser', schemas.User) as any).init()
@@ -101,6 +146,11 @@ const initializeModels = ({ config, Meta }: InitializeModelConfig) => (connectio
       }
     })
   ])
+    .then((context) => {
+      const [ _, itemModels, Meta ] = context
+      return createItems(Meta.User, itemModels)
+        .then(_ => context)
+    })
     .then(([ listModels, itemModels, jangleModels ]) => ({
       secret: config.secret,
       listModels,
