@@ -24,16 +24,13 @@ const startWithoutUser = (config: Config): Promise<ProtectedJangleCore> =>
     .then(services.initialize)
     .catch(reject)
 
-const startAsUser = (user: UserConfig, config: Config): Promise<JangleCore> =>
+export const startAsUser = (user: UserConfig, config: Config): Promise<JangleCore> =>
   parseConfigAsUser(user, config, baseConfig)  
     .then(startWithoutUser)
     .then(authenticateCore(user))
     .catch(reject)
 
-export const start = (config: Config): Promise<ProtectedJangleCore | JangleCore> =>
-  (config.user)
-    ? startAsUser(config.user, config)
-    : startWithoutUser(config)
+export const start = startWithoutUser
 
 export default {
   start
