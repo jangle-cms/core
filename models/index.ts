@@ -35,33 +35,42 @@ export const getLiveSchema = (schema: Schema): Schema => {
   return liveSchema
 }
 
-const getListModels = ({ schemas, connections, Meta }: InitializeUserModelsContext): UserModels =>
-  Object.keys(schemas)
-    .map((modelName) => {
-      const schema = schemas[modelName]
-      const history = connections.content.model(`JangleHistory${modelName}`, History, `jangle.history.${toCollectionName(modelName)}`)
 
-      return {
-        modelName,
-        content: connections.content.model(modelName, getContentSchema(Meta, schema), toCollectionName(modelName)),
-        live: connections.live.model(modelName, getLiveSchema(schema), toCollectionName(modelName)),
-        history: history as any
-      }
-    })
+type ModelNameInformation = {
+  historyModelName: (modelName: string) => string
+  historyCollectionName: (modelName: string) => string
+  collectionModelName: (modelName: string) => string
+  collectionCollectionName: (modelName: string) => string
+}
 
-const getItemModels = ({ schemas, connections, Meta }: InitializeUserModelsContext): UserModels =>
-  Object.keys(schemas)
-    .map((modelName) => {
-      const schema = schemas[modelName]
-      const history = connections.content.model(`JangleHistoryItems`, History, `jangle.history.items`)
+const getModels = ({ historyModelName, historyCollectionName, collectionModelName, collectionCollectionName }: ModelNameInformation) =>
+  ({ schemas, connections, Meta }: InitializeUserModelsContext): UserModels =>
+    Object.keys(schemas)
+      .map((modelName) => {
+        const schema = schemas[modelName]
+        const history = connections.content.model(historyModelName(modelName), History, historyCollectionName(modelName))
 
-      return {
-        modelName,
-        content: connections.content.model(`JangleItems${modelName}`, getContentSchema(Meta, schema), `jangle.items`),
-        live: connections.live.model(`JangleItems${modelName}`, getLiveSchema(schema), `jangle.items`),
-        history: history as any
-      }
-    })
+        return {
+          modelName,
+          content: connections.content.model(collectionModelName(modelName), getContentSchema(Meta, schema), collectionCollectionName(modelName)),
+          live: connections.live.model(collectionModelName(modelName), getLiveSchema(schema), collectionCollectionName(modelName)),
+          history: history as any
+        }
+      })
+
+const getListModels = getModels({
+  historyModelName: (modelName) => `JangleHistory${modelName}`,
+  historyCollectionName: (modelName) => `jangle.history.${toCollectionName(modelName)}`,
+  collectionModelName: (modelName) => modelName,
+  collectionCollectionName: toCollectionName
+})
+
+const getItemModels = getModels({
+  historyModelName: (_) => `JangleHistoryItems`,
+  historyCollectionName: (_) => `jangle.history.items`,
+  collectionModelName: (modelName) => `JangleItems${modelName}`,
+  collectionCollectionName: (_) => `jangle.items`
+})
 
 const initializeUserModels = (userModels: UserModels): Promise<UserModels> =>
   Promise.all(userModels.map(userModel =>
