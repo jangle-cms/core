@@ -78,11 +78,11 @@ __`./app.js`__
 const jangle = require('@jangle/core')
 const { Schema } = require('mongoose')
 
-jangle.start({
-  user: {
-    email: 'demo@jangle.com',
-    password: 'password'
-  },
+jangle.startAsUser({
+  name: 'Demo User',
+  email: 'demo@jangle.com',
+  password: 'password'
+}, {
   lists: {
     Person: new Schema({
       name: {
@@ -115,7 +115,7 @@ node app.js
 
 ### "What next?"
 
-The `jangle.start` function will returns a Promise, so we can safely handle any errors we might run into.
+The `jangle.startAsUser` function will returns a Promise, so we can safely handle any errors we might run into.
 
 Anytime we spin up Jangle, there are two possibilities:
 
@@ -130,11 +130,11 @@ Let's update our app with a `.then` and `.catch` to handle each of the two cases
 const jangle = require('@jangle/core')
 const { Schema } = require('mongoose')
 
-jangle.start({
-  user: {
-    email: 'demo@jangle.com',
-    password: 'password'
-  },
+jangle.startAsUser({
+  name: 'Demo User',
+  email: 'demo@jangle.com',
+  password: 'password'
+}, {
   lists: {
     Person: new Schema({
       name: {
@@ -233,11 +233,11 @@ __`./app.js`__
 const jangle = require('@jangle/core')
 const { Schema } = require('mongoose')
 
-jangle.start({
-  user: {
-    email: 'demo@jangle.com',
-    password: 'password'
-  },
+jangle.startAsUser({
+  name: 'Demo User',
+  email: 'demo@jangle.com',
+  password: 'password'
+}, {
   lists: {
     Person: new Schema({
       name: {
