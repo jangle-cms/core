@@ -99,9 +99,6 @@ const createJangleAdmin = (JangleUser: Model<any>) : Promise<IJangleItem> =>
           .then(_ => findAdmin(JangleUser)) as any
     )
 
-const createWithoutDefaults = (model: Model<any>, modelName: string, jangle: IJangleItemMeta) =>
-  model.updateOne({ 'jangle.model': modelName }, { jangle }, { upsert: true })
-
 const createItems = (JangleUser: Model<any>, models: UserModels) =>
   createJangleAdmin(JangleUser)
     .then((admin: any) => Promise.all(models.map(({ modelName, content }) => {
@@ -116,7 +113,7 @@ const createItems = (JangleUser: Model<any>, models: UserModels) =>
         .lean()
         .exec()
         .then((count: any) => (count === 0)
-          ? createWithoutDefaults(content, modelName, jangle)
+          ? content.create({ jangle })
           : Promise.resolve(undefined)
         )
     })))

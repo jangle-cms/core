@@ -150,7 +150,7 @@ export type GetFunction<T> = (id: Id, params?: GetParams) => Promise<T>
 
 export type ItemGetFunction<T> = (params?: GetParams) => Promise<T>
 
-export type CreateFunction<T> = (newItem: object) => Promise<T>
+export type CreateFunction<T> = (newItem?: object) => Promise<T>
 export type UpdateFunction<T> = (id: Id, newItem: object) => Promise<T>
 export type PatchFunction<T> = (id: Id, newValues: Dict<any>) => Promise<T>
 export type RemoveFunction<T> = (id: Id) => Promise<T>
@@ -184,7 +184,7 @@ export type ProtectedGetFunction<T> = (token: Token, id: Id, params?: GetParams)
 
 export type ProtectedItemGetFunction<T> = (token: Token, params?: GetParams) => Promise<T>
 
-export type ProtectedCreateFunction<T> = (token: Token, newItem: object) => Promise<T>
+export type ProtectedCreateFunction<T> = (token: Token, newItem?: object) => Promise<T>
 export type ProtectedUpdateFunction<T> = (token: Token, id: Id, newItem: object) => Promise<T>
 export type ProtectedPatchFunction<T> = (token: Token, id: Id, newValues: Dict<any>) => Promise<T>
 export type ProtectedRemoveFunction<T> = (token: Token, id: Id) => Promise<T>

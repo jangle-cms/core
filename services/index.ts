@@ -175,7 +175,7 @@ type HistoryContext = {
   history: Model<IHistoryDocument>
 }
 
-const makeCreate = (context: ModifyContext) => (userId: Id, item: object): Promise<IJangleItem> =>
+const makeCreate = (context: ModifyContext) => (userId: Id, item: object = {}): Promise<IJangleItem> =>
   (item)
     ? makeCreateWithItem(context, addCreateMeta(userId, item))
     : Promise.reject(errors.missingItem)
@@ -229,7 +229,7 @@ const makeUpdateFunction = ({ overwrite, ignoreItem, removeItem }: UpdateConfig)
               addUpdateMeta(userId, oldItem, newItem), {
                 runValidators: true,
                 overwrite,
-                setDefaultsOnInsert: false
+                setDefaultsOnInsert: true
               } as any
             )
               .lean()
