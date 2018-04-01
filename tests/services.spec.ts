@@ -296,12 +296,6 @@ describe('core', () => {
         .catch(reason => expect(reason).to.equal(authErrors.invalidToken))
     )
 
-    it('requires an item', () =>
-      Jangle.lists.Example.create(Token, undefined)
-        .then(fail)
-        .catch(reason => expect(reason).to.equal(errors.missingItem))
-    )
-
     it('enforces required fields', () =>
       Jangle.lists.Example.create(Token, invalidItem)
         .then(fail)
