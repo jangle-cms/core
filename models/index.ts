@@ -1,7 +1,7 @@
 import { Config, Dict, MongoUris, Models, UserModels, MetaModels, ModelsNodeContext, MongoConnections, InitializeUserModelsContext, InitializeJangleModelsConfig, InitializeModelConfig, ModelsContext, Schema, UserModel, IJangleMeta, IJangleItem, IJangleItemMeta } from '../types'
 import { Meta, User, History } from './schemas'
 import * as mongoose from 'mongoose'
-import { reject, debug, toCollectionName, stamp } from '../utils'
+import { reject, debug, toCollectionName, stamp, debugWithLabel, formatError } from '../utils'
 import { Model } from 'mongoose';
 
 export const errors = {
@@ -72,11 +72,28 @@ const getItemModels = getModels({
   collectionCollectionName: (_) => `jangle.items`
 })
 
+const dropIndexes = (model : Model<any>) : Promise<Model<any>> =>
+  model.collection.dropIndexes()
+    .then(_ => model)
+    .catch(_ => model)
+
+const initializeUserModel = (model : any) : Model<any> =>
+  model.init()
+
+const handleInitializationError = (model : Model<any>) => (reason : string) : Model<any> => {
+  console.error('ERROR', reason)
+  return model
+}
+
 const initializeUserModels = (userModels: UserModels): Promise<UserModels> =>
   Promise.all(userModels.map(userModel =>
     Promise.all([
-      (userModel.content as any).init(),
-      (userModel.live as any).init(),
+      dropIndexes(userModel.content)
+        .then(initializeUserModel)
+        .catch(formatError),
+      dropIndexes(userModel.live)
+        .then(initializeUserModel)
+        .catch(formatError),
       (userModel.history as any).init()
     ])
       .then(([ content, live, history ]) => ({

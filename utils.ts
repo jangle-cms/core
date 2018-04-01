@@ -9,6 +9,10 @@ export const debug = (thing: any) => {
   console.log(thing)
   return thing
 }
+export const debugWithLabel = (label: string, thing: any) => {
+  console.log(label, thing)
+  return thing
+}
 
 export const stamp = (id: Id): Signature => ({
   by: id,
@@ -172,11 +176,11 @@ export const authenticateCore = ({ email, password }: UserConfig) => ({ auth, li
 const parseDuplicateKeyError = (error: any) : Promise<string> =>
   Promise.resolve(error.message.split(': '))
     .then(([ _prefix, collectionPiece, fieldPiece, _brace, valuePiece ]) => {
-      const collectionName = collectionPiece.split(' ')[0]
+      const collectionName = collectionPiece.split(' ')[0].split('.')[1]
       const fieldName = fieldPiece.split(' ').map((index: string) => index.split('_')[0])[0]
       const value = valuePiece.split(' ')[0]
 
-      return Promise.reject(`${collectionName} already has a ${fieldName} with value ${value}.`)
+      return Promise.reject(`The ${fieldName} field in the ${collectionName} list is unique. Only one item can be ${value}.`)
     })
 
 const formatValidationError = ({ errors }: any) : Promise<any> => {
