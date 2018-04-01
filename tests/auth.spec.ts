@@ -63,7 +63,7 @@ describe('auth', () => {
   describe('createInitialAdmin', () => {
 
     it('disallows creation of invalid user', () =>
-      Auth.auth.createInitialAdmin('test@jangle.com', undefined)
+      Auth.auth.createInitialAdmin({ name: 'Admin User', email: 'test@jangle.com', password: undefined })
         .then(fail)
         .catch(reason => {
           expect(reason).to.equal(errors.invalidUser)
@@ -71,7 +71,7 @@ describe('auth', () => {
     )
   
     it('allows creation of valid user', () =>
-      Auth.auth.createInitialAdmin(login.email, login.password)
+      Auth.auth.createInitialAdmin({ name: 'Admin User', email: login.email, password: login.password })
         .then(token => {
           Token = token
           expect(token).to.exist
@@ -79,7 +79,7 @@ describe('auth', () => {
     )
   
     it('disallows creation after admin exists', () =>
-      Auth.auth.createInitialAdmin('another@jangle.com', 'password')
+      Auth.auth.createInitialAdmin({ name: 'Admin', email: 'another@jangle.com', password: 'password' })
         .then(fail)
         .catch(reason => {
           expect(reason).to.equal(errors.adminExists)

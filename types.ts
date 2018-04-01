@@ -51,13 +51,10 @@ export type JangleSchema = {
 }
 
 export interface IUser {
+  name: string
   email: string
   password: string
   role: Role
-  name?: {
-    first: string
-    last: string
-  }
 }
 
 export interface IJangleMeta {
@@ -348,7 +345,7 @@ export type ProtectedItemService<T> = {
 
 export type ValidateFunction = (token: Token) => Promise<Id>
 export type SignInFunction = (email: string, password: string) => Promise<Token>
-export type CreateInitialAdminFunction = (email: string, password: string) => Promise<Token>
+export type CreateInitialAdminFunction = (user: UserConfig) => Promise<Token>
 export type HasInitialAdmin = () => Promise<boolean>
 
 export type Authorization = {
@@ -379,6 +376,7 @@ export type Config = {
 }
 
 export type UserConfig = {
+  name: string
   email: string
   password: string
 } 

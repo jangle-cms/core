@@ -2,13 +2,11 @@ import { Schema } from 'mongoose'
 import { roles } from '../../types'
 import { encrypt, debug } from '../../utils'
 
-export type User = {
-  email: string,
-  password: string,
-  role: string
-}
-
 const User = new Schema({
+  name: {
+    type: String,
+    required: [ true, 'Name is required.' ]
+  },
   email: {
     type: String,
     index: true,

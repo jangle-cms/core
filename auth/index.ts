@@ -1,4 +1,4 @@
-import { Models, Auth, Token, IUserModel, Id, Authorization, IUserDocument } from '../types'
+import { Models, Auth, Token, IUserModel, Id, Authorization, IUserDocument, UserConfig } from '../types'
 import { hash, reject, compare, debug } from '../utils'
 import * as jwt from 'jsonwebtoken'
 
@@ -47,15 +47,15 @@ const makeHasInitialAdmin = (User: IUserModel)=> () : Promise<boolean> =>
     .then(count => count > 0)
     .catch(reject)
 
-const createAdminUser = (User: IUserModel, email: string, password: string): Promise<IUserDocument> =>
-  User.create({ email, password, role: 'admin' })
+const createAdminUser = (User: IUserModel, { name, email, password }: UserConfig): Promise<IUserDocument> =>
+  User.create({ name, email, password, role: 'admin' })
     .catch(_reason => Promise.reject(errors.invalidUser))
 
-const makeCreateInitialAdmin = ({ secret, User }: AuthContext) => (email: string, password: string): Promise<Token> =>
+const makeCreateInitialAdmin = ({ secret, User }: AuthContext) => (user: UserConfig): Promise<Token> =>
   makeHasInitialAdmin(User)()
     .then(hasAdminAlready => hasAdminAlready
       ? Promise.reject(errors.adminExists)
-      : createAdminUser(User, email, password)
+      : createAdminUser(User, user)
     )
     .then(({ _id }) => generateToken(secret, { id: _id }))
     .catch(reject)

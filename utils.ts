@@ -160,11 +160,11 @@ export const authenticateServices = (token: Token, ProtectedListServices: Dict<P
       return services
     }, {}) as Dict<ListService<any>>
 
-export const authenticateCore = ({ email, password }: UserConfig) => ({ auth, lists, items }: ProtectedJangleCore): Promise<JangleCore> =>
+export const authenticateCore = (user: UserConfig) => ({ auth, lists, items }: ProtectedJangleCore): Promise<JangleCore> =>
   auth.hasInitialAdmin()
     .then(hasInitialAdmin => hasInitialAdmin
-      ? auth.signIn(email, password)
-      : auth.createInitialAdmin(email, password)
+      ? auth.signIn(user.email, user.password)
+      : auth.createInitialAdmin(user)
     )
     .then(token => ({
       auth: auth,

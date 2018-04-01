@@ -80,11 +80,6 @@ const dropIndexes = (model : Model<any>) : Promise<Model<any>> =>
 const initializeUserModel = (model : any) : Model<any> =>
   model.init()
 
-const handleInitializationError = (model : Model<any>) => (reason : string) : Model<any> => {
-  console.error('ERROR', reason)
-  return model
-}
-
 const initializeUserModels = (userModels: UserModels): Promise<UserModels> =>
   Promise.all(userModels.map(userModel =>
     Promise.all([
@@ -105,11 +100,14 @@ const initializeUserModels = (userModels: UserModels): Promise<UserModels> =>
       .catch(reject)
   ))
 
-const jangleAdminEmail =
-  'admin@jangle.io'
+const jangleAdmin = {
+  name: 'Jangle',
+  email: 'admin@jangle.io',
+  role: 'jangle'
+}
 
 const findAdmin = (JangleUser: Model<any>) =>
-  JangleUser.findOne({ email: jangleAdminEmail })
+  JangleUser.findOne({ email: jangleAdmin.email })
 
 const createJangleAdmin = (JangleUser: Model<any>) : Promise<IJangleItem> =>
   findAdmin(JangleUser)
@@ -118,10 +116,7 @@ const createJangleAdmin = (JangleUser: Model<any>) : Promise<IJangleItem> =>
     .then(admin => admin
       ? admin
       : JangleUser.collection
-          .insertOne({
-            email: jangleAdminEmail,
-            role: 'jangle'
-          })
+          .insertOne(jangleAdmin)
           .then(_ => findAdmin(JangleUser)) as any
     )
 

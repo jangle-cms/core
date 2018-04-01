@@ -400,6 +400,7 @@ describe('utils', () => {
 
     it('accepts a valid user', () =>
       isValidUser({
+        name: 'Ryan',
         email: 'ryan@jangle.com',
         password: 'password'
       }).then(user => expect(user).to.exist)
@@ -420,7 +421,7 @@ describe('utils', () => {
 
     it('returns a valid config, given a user', () =>
       parseConfigAsUser(
-        { email: 'ryan@jangle.com', password: 'password' },
+        { name: 'Ryan', email: 'ryan@jangle.com', password: 'password' },
         undefined,
         baseConfig
       ).then(config => expect(isValidConfig(config)).to.be.true)
@@ -548,7 +549,7 @@ describe('utils', () => {
     }
 
     it('works with no initial admin', () => {
-      authenticateCore({ email: 'ryan@jangle.com', password: 'password' })({ auth, lists: {}, items: {} })
+      authenticateCore({ name: 'Ryan', email: 'ryan@jangle.com', password: 'password' })({ auth, lists: {}, items: {} })
         .then(({ auth, lists }) => {
           expect(auth).to.exist
           expect(lists).to.exist
@@ -556,7 +557,7 @@ describe('utils', () => {
     })
 
     it('works with an initial admin', () => {
-      authenticateCore({ email: 'ryan@jangle.com', password: 'password' })({ auth, lists: {}, items: {} })
+      authenticateCore({ name: 'Ryan', email: 'ryan@jangle.com', password: 'password' })({ auth, lists: {}, items: {} })
         .then(({ auth, lists }) => {
           expect(auth).to.exist
           expect(lists).to.exist
