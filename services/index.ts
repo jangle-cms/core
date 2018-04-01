@@ -9,7 +9,7 @@ import {
   ProtectedItemService
 } from '../types'
 import * as R from 'ramda'
-import { reject, debug, stamp } from '../utils'
+import { reject, debug, stamp, formatError } from '../utils'
 import { Schema, Query } from 'mongoose'
 import * as pluralize from 'pluralize'
 
@@ -183,7 +183,7 @@ const makeCreate = (context: ModifyContext) => (userId: Id, item: object = {}): 
 const makeCreateWithItem = ({ model, schema }: ModifyContext, item: object) =>
   model.create(item)
     .then(({ _id }) => makeListGet({ model, schema })(_id))
-    .catch(reject)
+    .catch(formatError) as any
 
 const makeObjectList = (obj: any) =>
   Object.keys(obj).map(key => ({ [key]: obj[key] }))
@@ -213,7 +213,7 @@ const createHistoryItem = ({ history }: HistoryContext, oldItem: IJangleItem) =>
       changes: makeHistoryItem(oldItem, newItem)
     })
       .then((_historyItem: any) => newItem)
-      .catch(reject) as any
+      .catch(formatError) as any
 
 const makeUpdateFunction = ({ overwrite, ignoreItem, removeItem }: UpdateConfig) =>
   ({ content, history }: HistoryContext, userId: Id, id: Id, newItem?: object): Promise<IJangleItem> =>
@@ -254,7 +254,7 @@ const makeUpdateFunction = ({ overwrite, ignoreItem, removeItem }: UpdateConfig)
               )
               .catch(reject)
           )
-          .catch(reject) as any
+          .catch(formatError) as any
     : Promise.reject(errors.missingItem)
 
 const makeUpdate = makeUpdateFunction({ overwrite: true })

@@ -1,6 +1,6 @@
 import * as crypto from 'crypto'
 import { Config, Dict, UserConfig, ProtectedListService, ListService, Token, ProtectedJangleCore, JangleCore, Id, Signature } from './types'
-import { Schema } from 'mongoose'
+import { Schema, ValidationError, Collection } from 'mongoose'
 import * as bcrypt from 'bcrypt'
 import * as pluralize from 'pluralize'
 import R = require('ramda');
@@ -15,7 +15,8 @@ export const stamp = (id: Id): Signature => ({
   at: new Date(Date.now())
 })
 
-export const toCollectionName = (thing: string) => pluralize.plural(thing).toLocaleLowerCase();
+export const toCollectionName = (thing: string) =>
+  pluralize.plural(thing).toLocaleLowerCase()
 
 export const reject = (reason: string) => Promise.reject(reason)
 
@@ -167,3 +168,40 @@ export const authenticateCore = ({ email, password }: UserConfig) => ({ auth, li
       items: authenticateServices(token, items as any) as any
     }))
     .catch(reject)
+
+const parseDuplicateKeyError = (error: any) : Promise<string> =>
+  Promise.resolve(error.message.split(': '))
+    .then(([ _prefix, collectionPiece, fieldPiece, _brace, valuePiece ]) => {
+      const collectionName = collectionPiece.split(' ')[0]
+      const fieldName = fieldPiece.split(' ').map((index: string) => index.split('_')[0])[0]
+      const value = valuePiece.split(' ')[0]
+
+      return Promise.reject(`${collectionName} already has a ${fieldName} with value ${value}.`)
+    })
+
+const formatValidationError = ({ errors }: any) : Promise<any> => {
+  const firstError = errors[Object.keys(errors)[0]]
+
+  if (firstError) {
+    switch (firstError.name) {
+      case 'CastError':
+        const { path, kind, value } = firstError
+        return Promise.reject(`The '${path}' field should be a ${kind}, but it was passed a ${typeof value}.`)
+    }
+  }
+
+  return Promise.reject('Jangle found an unexpected validation error.')
+}
+
+export const formatError = (error: any) : Promise<any> => {
+  const isDuplicateKeyError = error.code === 11000
+
+  if (isDuplicateKeyError) {
+    return parseDuplicateKeyError(error)
+  } else if (error.name === 'ValidationError') {
+    return formatValidationError(error)
+  } else {
+    console.error('ERROR', error)
+    return Promise.reject(`Something unexpected happened!`)
+  }
+}
