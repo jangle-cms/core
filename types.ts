@@ -345,13 +345,13 @@ export type ProtectedItemService<T> = {
 
 export type ValidateFunction = (token: Token) => Promise<Id>
 export type SignInFunction = (email: string, password: string) => Promise<Token>
-export type CreateInitialAdminFunction = (user: UserConfig) => Promise<Token>
-export type HasInitialAdmin = () => Promise<boolean>
+export type SignUpFunction = (user: UserConfig) => Promise<Token>
+export type CanSignUpFunction = () => Promise<boolean>
 
 export type Authorization = {
   signIn: SignInFunction
-  createInitialAdmin: CreateInitialAdminFunction
-  hasInitialAdmin: HasInitialAdmin
+  signUp: SignUpFunction
+  canSignUp: CanSignUpFunction
 }
 
 export type Auth = {

@@ -51,19 +51,19 @@ describe('auth', () => {
     expect(Auth.jangleModels).to.haveOwnProperty('User')
   )
 
-  describe('hasInitialAdmin', () => {
+  describe('canSignUp', () => {
     it('has no initial users', () =>
-      Auth.auth.hasInitialAdmin()
-        .then(hasInitialAdmin => {
-          expect(hasInitialAdmin).to.be.false
+      Auth.auth.canSignUp()
+        .then(canSignUp => {
+          expect(canSignUp).to.be.false
         })
     )
   })
 
-  describe('createInitialAdmin', () => {
+  describe('signUp', () => {
 
     it('disallows creation of invalid user', () =>
-      Auth.auth.createInitialAdmin({ name: 'Admin User', email: 'test@jangle.com', password: undefined })
+      Auth.auth.signUp({ name: 'Admin User', email: 'test@jangle.com', password: undefined })
         .then(fail)
         .catch(reason => {
           expect(reason).to.equal(errors.invalidUser)
@@ -71,7 +71,7 @@ describe('auth', () => {
     )
   
     it('allows creation of valid user', () =>
-      Auth.auth.createInitialAdmin({ name: 'Admin User', email: login.email, password: login.password })
+      Auth.auth.signUp({ name: 'Admin User', email: login.email, password: login.password })
         .then(token => {
           Token = token
           expect(token).to.exist
@@ -79,7 +79,7 @@ describe('auth', () => {
     )
   
     it('disallows creation after admin exists', () =>
-      Auth.auth.createInitialAdmin({ name: 'Admin', email: 'another@jangle.com', password: 'password' })
+      Auth.auth.signUp({ name: 'Admin', email: 'another@jangle.com', password: 'password' })
         .then(fail)
         .catch(reason => {
           expect(reason).to.equal(errors.adminExists)

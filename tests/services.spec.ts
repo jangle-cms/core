@@ -79,9 +79,8 @@ describe('core', () => {
 
   describe('auth', () => {
 
-    it('allows creation of first admin', () =>
-      Jangle.auth
-        .createInitialAdmin({ name: 'Admin User', email: login.email, password: login.password })
+    it('allows sign up', () =>
+      Jangle.auth.signUp({ name: 'Admin User', email: login.email, password: login.password })
         .then(token => {
           Token = token
           expect(token).to.be.a('string')

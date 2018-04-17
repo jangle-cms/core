@@ -41,7 +41,7 @@ const makeValidate = ({ secret, User }: AuthContext) => (token: Token): Promise<
     .then(checkUserIdFromToken(User))
     .catch(reject)
 
-const makeHasInitialAdmin = (User: IUserModel)=> () : Promise<boolean> =>
+const makeCanSignUp = (User: IUserModel) => () : Promise<boolean> =>
   User.count({ role: 'admin' })
     .exec()
     .then(count => count > 0)
@@ -51,8 +51,8 @@ const createAdminUser = (User: IUserModel, { name, email, password }: UserConfig
   User.create({ name, email, password, role: 'admin' })
     .catch(_reason => Promise.reject(errors.invalidUser))
 
-const makeCreateInitialAdmin = ({ secret, User }: AuthContext) => (user: UserConfig): Promise<Token> =>
-  makeHasInitialAdmin(User)()
+const makeSignUp = ({ secret, User }: AuthContext) => (user: UserConfig): Promise<Token> =>
+  makeCanSignUp(User)()
     .then(hasAdminAlready => hasAdminAlready
       ? Promise.reject(errors.adminExists)
       : createAdminUser(User, user)
@@ -78,8 +78,8 @@ const makeSignIn = ({ secret, User }: AuthContext) => (email: string, password: 
 
 const makeAuthorization = (context: AuthContext): Authorization => ({
   signIn: makeSignIn(context),
-  createInitialAdmin: makeCreateInitialAdmin(context),
-  hasInitialAdmin: makeHasInitialAdmin(context.User)
+  signUp: makeSignUp(context),
+  canSignUp: makeCanSignUp(context.User)
 })
 
 const initialize = ({ secret, listModels, itemModels, jangleModels: { User }, jangleModels }: Models): Promise<Auth> =>
