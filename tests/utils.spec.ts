@@ -535,17 +535,16 @@ describe('utils', () => {
   describe('authenticateCore', () => {
     const auth = {
       admin: undefined,
-      hasInitialAdmin () {
-        return Promise.resolve(this.admin)
+      canSignUp () {
+        return Promise.resolve(!this.admin)
       },
-      createInitialAdmin () {
+      signUp () {
         this.admin = { email: 'ryan@jangle.com', password: 'password' }
         return Promise.resolve('1234')
       },
       signIn (email, password) {
         return Promise.resolve('1234')
-      },
-
+      }
     }
 
     it('works with no initial admin', () => {
