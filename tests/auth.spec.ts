@@ -52,10 +52,10 @@ describe('auth', () => {
   )
 
   describe('canSignUp', () => {
-    it('has no initial users', () =>
+    it('can sign up initially', () =>
       Auth.auth.canSignUp()
         .then(canSignUp => {
-          expect(canSignUp).to.be.false
+          expect(canSignUp).to.be.true
         })
     )
   })

@@ -44,7 +44,7 @@ const makeValidate = ({ secret, User }: AuthContext) => (token: Token): Promise<
 const makeCanSignUp = (User: IUserModel) => () : Promise<boolean> =>
   User.count({ role: 'admin' })
     .exec()
-    .then(count => count > 0)
+    .then(count => count === 0)
     .catch(reject)
 
 const createAdminUser = (User: IUserModel, { name, email, password }: UserConfig): Promise<IUserDocument> =>
@@ -53,9 +53,9 @@ const createAdminUser = (User: IUserModel, { name, email, password }: UserConfig
 
 const makeSignUp = ({ secret, User }: AuthContext) => (user: UserConfig): Promise<Token> =>
   makeCanSignUp(User)()
-    .then(hasAdminAlready => hasAdminAlready
-      ? Promise.reject(errors.adminExists)
-      : createAdminUser(User, user)
+    .then(canSignUp => canSignUp
+      ? createAdminUser(User, user)
+      : Promise.reject(errors.adminExists)
     )
     .then(({ _id }) => generateToken(secret, { id: _id }))
     .catch(reject)
