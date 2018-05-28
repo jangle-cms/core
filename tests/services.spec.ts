@@ -462,20 +462,14 @@ describe('core', () => {
 
   describe('isLive', () => {
 
-    it('requires a token', () =>
-      Jangle.lists.Example.isLive(undefined, undefined)
-        .then(fail)
-        .catch(reason => expect(reason).to.equal(authErrors.invalidToken))
-    )
-
     it('requires an _id', () =>
-      Jangle.lists.Example.isLive(Token, undefined)
+      Jangle.lists.Example.isLive(undefined)
         .then(fail)
         .catch(reason => expect(reason).to.equal(errors.missingId))
     )
 
     it('returns false before publish', () => {
-      Jangle.lists.Example.isLive(Token, Item._id)
+      Jangle.lists.Example.isLive(Item._id)
         .then(isLive => expect(isLive).to.be.false)
     })
 
@@ -509,7 +503,7 @@ describe('core', () => {
   describe('isLive', () => {
 
     it('returns true after publish', () => {
-      Jangle.lists.Example.isLive(Token, Item._id)
+      Jangle.lists.Example.isLive(Item._id)
         .then(isLive => expect(isLive).to.be.true)
     })
 
@@ -543,7 +537,7 @@ describe('core', () => {
   describe('isLive', () => {
 
     it('returns false after unpublish', () => {
-      Jangle.lists.Example.isLive(Token, Item._id)
+      Jangle.lists.Example.isLive(Item._id)
         .then(isLive => expect(isLive).to.be.false)
     })
 

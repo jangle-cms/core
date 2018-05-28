@@ -189,11 +189,9 @@ export type ProtectedRemoveFunction<T> = (token: Token, id: Id) => Promise<T>
 export type ProtectedItemUpdateFunction<T> = (token: Token, newItem: object) => Promise<T>
 export type ProtectedItemPatchFunction<T> = (token: Token, newValues: Dict<any>) => Promise<T>
 
-export type ProtectedIsLiveFunction = (token: Token, id: Id) => Promise<boolean>
 export type ProtectedPublishFunction<T> = (token: Token, id: Id) => Promise<T>
 export type ProtectedUnpublishFunction<T> = (token: Token, id: Id) => Promise<T>
 
-export type ProtectedItemIsLiveFunction = (token: Token) => Promise<boolean>
 export type ProtectedItemPublishFunction<T> = (token: Token) => Promise<T>
 export type ProtectedItemUnpublishFunction<T> = (token: Token) => Promise<T>
 
@@ -308,9 +306,9 @@ export type ProtectedListService<T> = {
   patch: ProtectedPatchFunction<T>
   remove: ProtectedRemoveFunction<T>
 
-  isLive: ProtectedIsLiveFunction
   publish: ProtectedPublishFunction<T>
   unpublish: ProtectedUnpublishFunction<T>
+  isLive: IsLiveFunction
   live: LiveService
 
   history: ProtectedHistoryFunction
@@ -327,13 +325,13 @@ export type ProtectedItemService<T> = {
   update: ProtectedItemUpdateFunction<T>
   patch: ProtectedItemPatchFunction<T>
 
-  isLive: ProtectedItemIsLiveFunction
-  publish: ProtectedItemPublishFunction<T>
-  unpublish: ProtectedItemUnpublishFunction<T>
-
   history: ProtectedItemHistoryFunction
   previewRollback: ProtectedItemPreviewRollbackFunction<T>
   rollback: ProtectedItemRollbackFunction<T>
+
+  publish: ProtectedItemPublishFunction<T>
+  unpublish: ProtectedItemUnpublishFunction<T>
+  isLive: ItemIsLiveFunction
 
   schema: ProtectedSchemaFunction
 

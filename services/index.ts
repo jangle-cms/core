@@ -433,7 +433,7 @@ const initializeItemService = (modelName: string, validate: ValidateFunction, { 
     update: (token, newItem) => validate(token).then(userId => makeItemUpdate(modelName, { content, userId, history }, newItem)),
     patch: (token, newItem) => validate(token).then(userId => makeItemPatch(modelName, { content, userId, history }, newItem)),
 
-    isLive: (token) => validate(token).then(_ => makeIsLive(live.count({ 'jangle.model': modelName }))),
+    isLive: () => makeIsLive(live.count({ 'jangle.model': modelName })),
     publish: (token) => validate(token).then(_ => makePublish(live, content.findOne({ 'jangle.model': modelName }))),
     unpublish: (token) => validate(token).then(_ => makeUnpublish(live.findOneAndRemove({ 'jangle.model': modelName }))),
 
@@ -468,7 +468,7 @@ const initializeListService = (validate: ValidateFunction, { content, live, hist
     patch: (token, id, newValues) => validate(token).then(userId => makePatch({ content, history, userId }, userId, id, newValues)),
     remove: (token, id) => validate(token).then(userId => makeRemove({ content, history, userId }, userId, id)),
 
-    isLive: (token, id) => validate(token).then(_ => makeListIsLive({ content, live }, id)),
+    isLive: (id) => makeListIsLive({ content, live }, id),
     publish: (token, id) => validate(token).then(_ => makeListPublish({ content, live }, id)),
     unpublish: (token, id) => validate(token).then(_ => makeListUnpublish({ content, live }, id)),
 
