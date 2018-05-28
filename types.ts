@@ -343,9 +343,15 @@ export type ProtectedItemService<T> = {
 
 // Auth
 
+export type User = {
+  name: String
+  email: String
+  token: Token
+}
+
 export type ValidateFunction = (token: Token) => Promise<Id>
-export type SignInFunction = (email: string, password: string) => Promise<Token>
-export type SignUpFunction = (user: UserConfig) => Promise<Token>
+export type SignInFunction = (email: string, password: string) => Promise<User>
+export type SignUpFunction = (user: UserConfig) => Promise<User>
 export type CanSignUpFunction = () => Promise<boolean>
 
 export type Authorization = {

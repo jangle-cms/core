@@ -166,8 +166,8 @@ export const authenticateCore = (user: UserConfig) => ({ auth, lists, items }: P
       ? auth.signUp(user)
       : auth.signIn(user.email, user.password)
     )
-    .then(token => ({
-      auth: auth,
+    .then(({ token }) => ({
+      auth,
       lists: authenticateServices(token, lists),
       items: authenticateServices(token, items as any) as any
     }))

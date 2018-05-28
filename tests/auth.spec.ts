@@ -72,7 +72,7 @@ describe('auth', () => {
   
     it('allows creation of valid user', () =>
       Auth.auth.signUp({ name: 'Admin User', email: login.email, password: login.password })
-        .then(token => {
+        .then(({ token }) => {
           Token = token
           expect(token).to.exist
         })
@@ -129,7 +129,7 @@ describe('auth', () => {
 
     it('returns same token on success', () =>
       Auth.auth.signIn(login.email, login.password)
-        .then(token => {
+        .then(({ token }) => {
           expect(token).to.equal(Token)
         })
     )

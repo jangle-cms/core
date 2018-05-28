@@ -81,7 +81,7 @@ describe('core', () => {
 
     it('allows sign up', () =>
       Jangle.auth.signUp({ name: 'Admin User', email: login.email, password: login.password })
-        .then(token => {
+        .then(({ token }) => {
           Token = token
           expect(token).to.be.a('string')
         })
@@ -89,7 +89,7 @@ describe('core', () => {
 
     it('allows sign in', () =>
       Jangle.auth.signIn(login.email, login.password)
-        .then(token => {
+        .then(({ token }) => {
           expect(token).to.equal(Token)
         })
     )

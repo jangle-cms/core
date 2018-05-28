@@ -539,11 +539,19 @@ describe('utils', () => {
         return Promise.resolve(!this.admin)
       },
       signUp () {
-        this.admin = { email: 'ryan@jangle.com', password: 'password' }
-        return Promise.resolve('1234')
+        this.admin = { name: 'Ryan', email: 'ryan@jangle.com', password: 'password' }
+        return Promise.resolve({
+          name: this.admin.name,
+          email: this.admin.email,
+          token: '1234'
+        })
       },
       signIn (email, password) {
-        return Promise.resolve('1234')
+        return Promise.resolve({ 
+          name: this.admin.name,
+          email: this.admin.email,
+          token: '1234'
+        })
       }
     }
 

@@ -1,4 +1,4 @@
-import { Models, Auth, Token, IUserModel, Id, Authorization, IUserDocument, UserConfig } from '../types'
+import { Models, Auth, Token, IUserModel, Id, Authorization, IUserDocument, UserConfig, User } from '../types'
 import { hash, reject, compare, debug } from '../utils'
 import * as jwt from 'jsonwebtoken'
 
@@ -51,30 +51,41 @@ const createAdminUser = (User: IUserModel, { name, email, password }: UserConfig
   User.create({ name, email, password, role: 'admin' })
     .catch(_reason => Promise.reject(errors.invalidUser))
 
-const makeSignUp = ({ secret, User }: AuthContext) => (user: UserConfig): Promise<Token> =>
-  makeCanSignUp(User)()
-    .then(canSignUp => canSignUp
-      ? createAdminUser(User, user)
-      : Promise.reject(errors.adminExists)
-    )
-    .then(({ _id }) => generateToken(secret, { id: _id }))
-    .catch(reject)
+const makeSignUp = ({ secret, User }: AuthContext) =>
+  (user: UserConfig): Promise<User> =>
+    makeCanSignUp(User)()
+      .then(canSignUp => canSignUp
+        ? createAdminUser(User, user)
+        : Promise.reject(errors.adminExists)
+      )
+      .then(({ _id }) => generateToken(secret, { id: _id }))
+      .then(token => ({
+        name: user.name,
+        email: user.email,
+        token
+      }))
+      .catch(reject)
 
-const makeSignIn = ({ secret, User }: AuthContext) => (email: string, password: string): Promise<Token> =>
-  User.findOne({ email })
-    .select('password')
-    .lean()
-    .exec()
-    .then(user => user || Promise.reject(errors.badLogin))
-    .then((user : any) =>
-      compare(password, user.password)
-        .then(isMatch => isMatch
-          ? user
-          : Promise.reject(errors.badLogin)
-        )
-    )
-    .then((user : any) => generateToken(secret, { id: user._id }))
-    .catch(_reason => Promise.reject(errors.badLogin))
+const makeSignIn = ({ secret, User }: AuthContext) =>
+  (email: string, password: string): Promise<User> =>
+    User.findOne({ email })
+      .select('password')
+      .lean()
+      .exec()
+      .then(user => user || Promise.reject(errors.badLogin))
+      .then((user : any) =>
+        compare(password, user.password)
+          .then(isMatch => isMatch
+            ? user
+            : Promise.reject(errors.badLogin)
+          )
+      )
+      .then((user : any) => ({
+        name: user.name,
+        email: user.email,
+        token: generateToken(secret, { id: user._id })
+      }))
+      .catch(_reason => Promise.reject(errors.badLogin))
 
 const makeAuthorization = (context: AuthContext): Authorization => ({
   signIn: makeSignIn(context),
