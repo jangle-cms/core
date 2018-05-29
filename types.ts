@@ -368,13 +368,34 @@ export type Auth = {
 
 // Configuration
 
+export type JangleList = {
+  options?: JangleListOptions
+  schema: Schema
+}
+
+export type JangleListOptions = {
+  labels: {
+    singular: String
+    plural: String
+  }
+}
+
+export type JangleItem = {
+  options?: JangleItemOptions
+  schema: Schema
+}
+
+export type JangleItemOptions = {
+  label: String
+}
+
 export type Config = {
   mongo: {
     content: MongoUri
     live: MongoUri
   }
-  lists: Dict<Schema>
-  items: Dict<Schema>
+  lists: Dict<JangleList>
+  items: Dict<JangleItem>
   secret: string
 }
 

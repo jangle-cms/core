@@ -32,6 +32,8 @@ export const startAsUser = (user: UserConfig, config: Config): Promise<JangleCor
 
 export const start = startWithoutUser
 
+export const Schema = mongoose.Schema
+
 export default {
   start
 }

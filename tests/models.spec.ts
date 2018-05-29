@@ -78,7 +78,7 @@ describe('models', () => {
 
   describe('initialize', () => {
 
-    const lists = { ExampleSchema }
+    const lists = { Example: { schema: ExampleSchema } }
     const metaModelNames = [ 'User' ]
     const initialSecret = 'some-secret'
     let result = undefined

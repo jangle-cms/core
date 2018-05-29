@@ -19,16 +19,20 @@ describe('core', () => {
     },
     secret: 'some-secret',
     lists: {
-      Example: new Schema({
-        name: {
-          type: String,
-          required: true
-        },
-        age: Number
-      }),
-      AnotherExample: new Schema({
-        title: String
-      })
+      Example: {
+        schema: new Schema({
+          name: {
+            type: String,
+            required: true
+          },
+          age: Number
+        })
+    },
+      AnotherExample: {
+        schema: new Schema({
+          title: String
+        })
+    }
     },
     items: {}
   }

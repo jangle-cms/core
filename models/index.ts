@@ -1,4 +1,4 @@
-import { Config, Dict, MongoUris, Models, UserModels, MetaModels, ModelsNodeContext, MongoConnections, InitializeUserModelsContext, InitializeJangleModelsConfig, InitializeModelConfig, ModelsContext, Schema, UserModel, IJangleMeta, IJangleItem, IJangleItemMeta } from '../types'
+import { Config, Dict, MongoUris, Models, UserModels, MetaModels, ModelsNodeContext, MongoConnections, InitializeUserModelsContext, InitializeJangleModelsConfig, InitializeModelConfig, ModelsContext, Schema, UserModel, IJangleMeta, IJangleItem, IJangleItemMeta, JangleItem, JangleList } from '../types'
 import { Meta, User, History } from './schemas'
 import * as mongoose from 'mongoose'
 import { reject, debug, toCollectionName, stamp, debugWithLabel, formatError } from '../utils'
@@ -150,11 +150,17 @@ const initializeJangleModels = ({ connections, schemas }: InitializeJangleModels
     }))
     .catch(reject)
 
+const getSchemaDict = (obj : any) : Dict<Schema> =>
+  Object.keys(obj).reduce((newObj: any, name) => {
+    newObj[name] = obj[name].schema
+    return newObj
+  }, {})
+
 const initializeModels = ({ config, Meta }: InitializeModelConfig) => (connections : MongoConnections): Promise<Models> =>
   Promise.all([
-    Promise.resolve(getListModels({ schemas: config.lists, connections, Meta }))
+    Promise.resolve(getListModels({ schemas: getSchemaDict(config.lists), connections, Meta }))
       .then(initializeUserModels),
-    Promise.resolve(getItemModels({ schemas: config.items, connections, Meta }))
+    Promise.resolve(getItemModels({ schemas: getSchemaDict(config.items), connections, Meta }))
       .then(initializeUserModels),
     initializeJangleModels({
       connections,
