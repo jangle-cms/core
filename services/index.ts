@@ -33,6 +33,7 @@ type ItemServices = Dict<ItemService>
 export const errors = {
   missingId: 'Must provide an _id.',
   missingItem: 'No item provided.',
+  notFound: 'Item not found.',
   negativeVersionNumber: 'Version must be greater than zero.'
 }
 
@@ -307,6 +308,7 @@ const makePublish = (live: Model<Document>, query: Query<any>) : Promise<IJangle
   query
     .lean()
     .exec()
+    .then(doc => doc || reject(errors.notFound))
     .then(stripJangleMeta)
     .then(doc => live.create(doc))
     .catch(reject) as any
