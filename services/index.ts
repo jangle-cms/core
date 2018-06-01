@@ -175,6 +175,12 @@ type HistoryContext = {
   history: Model<IHistoryDocument>
 }
 
+type UpdateContext = {
+  live: Model<Document>
+  content: Model<Document>
+  history: Model<IHistoryDocument>
+}
+
 const makeCreate = (context: ModifyContext) => (userId: Id, item: object = {}): Promise<IJangleItem> =>
   (item)
     ? makeCreateWithItem(context, addCreateMeta(userId, item))
@@ -216,7 +222,7 @@ const createHistoryItem = ({ history }: HistoryContext, oldItem: IJangleItem) =>
       .catch(formatError) as any
 
 const makeUpdateFunction = ({ overwrite, ignoreItem, removeItem }: UpdateConfig) =>
-  ({ content, history }: HistoryContext, userId: Id, id: Id, newItem?: object): Promise<IJangleItem> =>
+  ({ content, history, live }: UpdateContext, userId: Id, id: Id, newItem?: object): Promise<IJangleItem> =>
     (id == null)
       ? Promise.reject(errors.missingId)
     : (ignoreItem || newItem)
@@ -241,7 +247,8 @@ const makeUpdateFunction = ({ overwrite, ignoreItem, removeItem }: UpdateConfig)
               )
               .then(updatedItem =>
                 removeItem
-                  ? createHistoryItem({ history, content, userId }, oldItem)({})
+                  ? makeListUnpublish({ content, live }, id)
+                      .then(_ => createHistoryItem({ history, content, userId }, oldItem)({}))
                       .then(_ => oldItem)
                   : createHistoryItem({ history, content, userId }, oldItem)(updatedItem)
                     .then(_ => oldItem)
@@ -261,17 +268,17 @@ const makeUpdate = makeUpdateFunction({ overwrite: true })
 const makePatch = makeUpdateFunction({ overwrite: false })
 const makeRemove = makeUpdateFunction({ overwrite: false, ignoreItem: true, removeItem: true })
 
-const makeItemUpdate = (modelName: string, context : HistoryContext, newItem?: object) =>
+const makeItemUpdate = (modelName: string, context : UpdateContext, userId: Id, newItem?: object) =>
   context.content.findOne({ 'jangle.model': modelName })
     .lean()
     .exec()
-    .then(({ _id } : any) => makeUpdate(context, context.userId, _id, newItem))
+    .then(({ _id } : any) => makeUpdate(context, userId, _id, newItem))
 
-const makeItemPatch = (modelName: string, context : HistoryContext, newItem?: object) =>
+const makeItemPatch = (modelName: string, context : UpdateContext, userId: Id, newItem?: object) =>
   context.content.findOne({ 'jangle.model': modelName })
     .lean()
     .exec()
-    .then(({ _id } : any) => makePatch(context, context.userId, _id, newItem))
+    .then(({ _id } : any) => makePatch(context, userId, _id, newItem))
 
 type PublishContext = {
   content: Model<Document>
@@ -430,8 +437,8 @@ const initializeItemService = (modelName: string, validate: ValidateFunction, { 
 
     get: (token, params) => validate(token).then(_ => makeGet(content.schema, content.findOne({ 'jangle.model': modelName }), params)),
 
-    update: (token, newItem) => validate(token).then(userId => makeItemUpdate(modelName, { content, userId, history }, newItem)),
-    patch: (token, newItem) => validate(token).then(userId => makeItemPatch(modelName, { content, userId, history }, newItem)),
+    update: (token, newItem) => validate(token).then(userId => makeItemUpdate(modelName, { live, content, history }, userId, newItem)),
+    patch: (token, newItem) => validate(token).then(userId => makeItemPatch(modelName, { live, content, history }, userId, newItem)),
 
     isLive: () => makeIsLive(live.count({ 'jangle.model': modelName })),
     publish: (token) => validate(token).then(_ => makePublish(live, content.findOne({ 'jangle.model': modelName }))),
@@ -464,9 +471,9 @@ const initializeListService = (validate: ValidateFunction, { content, live, hist
     get: (token, id, params) => validate(token).then(_id => makeListGet({ model: content, schema: content.schema })(id, params)),
 
     create: (token, newItem) => validate(token).then(userId => makeCreate({ model: content, schema: content.schema })(userId, newItem)),
-    update: (token, id, newItem) => validate(token).then(userId => makeUpdate({ content, history, userId }, userId, id, newItem)),
-    patch: (token, id, newValues) => validate(token).then(userId => makePatch({ content, history, userId }, userId, id, newValues)),
-    remove: (token, id) => validate(token).then(userId => makeRemove({ content, history, userId }, userId, id)),
+    update: (token, id, newItem) => validate(token).then(userId => makeUpdate({ content, history, live }, userId, id, newItem)),
+    patch: (token, id, newValues) => validate(token).then(userId => makePatch({ content, history, live }, userId, id, newValues)),
+    remove: (token, id) => validate(token).then(userId => makeRemove({ content, history, live }, userId, id)),
 
     isLive: (id) => makeListIsLive({ content, live }, id),
     publish: (token, id) => validate(token).then(_ => makeListPublish({ content, live }, id)),
