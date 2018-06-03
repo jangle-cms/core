@@ -408,12 +408,13 @@ const makeListHistoryPreview = ({ userId, history, content }: HistoryContext, id
 const excludeNames = (names: string[]) => ({ name }: JangleField) : boolean =>
   names.indexOf(name) === -1
 
-const makeSchema = (content: Model<Document>) : JangleSchema => {
+const makeSchema = (content: Model<Document>) : Promise<JangleSchema> => {
   const schema : any = (content.schema as any).paths
   const fieldNames = Object.keys(schema)
 
-  return {
+  return Promise.resolve({
     name: content.modelName,
+    slug: pluralize(content.modelName).toLowerCase(),
     labels: {
       singular: content.modelName,
       plural: pluralize(content.modelName)
@@ -431,7 +432,7 @@ const makeSchema = (content: Model<Document>) : JangleSchema => {
         }
       })
       .filter(excludeNames([ 'jangle', '_id' ]))
-  }
+  })
 }
 
 const initializeItemService = (modelName: string, validate: ValidateFunction, { content, live, history }: UserModel): ItemService => {
@@ -453,7 +454,7 @@ const initializeItemService = (modelName: string, validate: ValidateFunction, { 
         .then(userId => makeItemHistoryPreview(modelName, history, content, userId, version))
         .then((newItem) => service.update(token, newItem)),
 
-    schema: (token) => validate(token).then(_ => makeSchema(content)),
+    schema: () => makeSchema(content),
 
     live: {
       get: (params) => makeGet(live.schema, live.findOne({ 'jangle.model': modelName }), params)
@@ -495,7 +496,7 @@ const initializeListService = (validate: ValidateFunction, { content, live, hist
             : makeCreateWithItem({ model: content, schema: content.schema }, { ...newItem, _id: id })
         ),
 
-    schema: (token) => validate(token).then(_ => makeSchema(content)),
+    schema: () => makeSchema(content),
 
     live: {
       any: makeAny({ model: live }),

@@ -669,15 +669,8 @@ describe('core', () => {
 
 
   describe('schema', () => {
-
-    it('requires a token', () =>
-      Jangle.lists.Example.schema(undefined)
-        .then(fail)
-        .catch(reason => expect(reason).to.equal(authErrors.invalidToken))
-    )
-
     it('requires an item with both fields', () =>
-      Jangle.lists.Example.schema(Token)
+      Jangle.lists.Example.schema()
         .then(schema => {
           expect(schema.name).to.exist
           expect(schema.labels).to.exist

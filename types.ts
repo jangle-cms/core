@@ -43,6 +43,7 @@ export type JangleField = {
 
 export type JangleSchema = {
   name: string
+  slug: string
   labels: {
     singular: string
     plural: string
@@ -203,8 +204,6 @@ export type ProtectedItemHistoryFunction = (token: Token) => Promise<IHistory[]>
 export type ProtectedItemPreviewRollbackFunction<T> = (token: Token, version?: number) => Promise<T>
 export type ProtectedItemRollbackFunction<T> = (token: Token, version?: number) => Promise<T>
 
-export type ProtectedSchemaFunction = (token: Token) => Promise<JangleSchema>
-
 export type LiveService = {
   any: AnyFunction
   count: CountFunction
@@ -290,7 +289,7 @@ export type ProtectedMetaListService<T> = {
   patch: ProtectedPatchFunction<T>
   remove: ProtectedRemoveFunction<T>
 
-  schema: ProtectedSchemaFunction
+  schema: SchemaFunction
 
 }
 
@@ -315,7 +314,7 @@ export type ProtectedListService<T> = {
   previewRollback: ProtectedPreviewRollbackFunction<T>
   rollback: ProtectedRollbackFunction<T>
 
-  schema: ProtectedSchemaFunction
+  schema: SchemaFunction
 
 }
 
@@ -333,7 +332,7 @@ export type ProtectedItemService<T> = {
   unpublish: ProtectedItemUnpublishFunction<T>
   isLive: ItemIsLiveFunction
 
-  schema: ProtectedSchemaFunction
+  schema: SchemaFunction
 
   live: ItemLiveService
 
