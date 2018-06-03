@@ -368,26 +368,9 @@ export type Auth = {
 
 // Configuration
 
-export type JangleList = {
-  options?: JangleListOptions
-  schema: Schema
-}
+export type JangleList = Schema
 
-export type JangleListOptions = {
-  labels: {
-    singular: String
-    plural: String
-  }
-}
-
-export type JangleItem = {
-  options?: JangleItemOptions
-  schema: Schema
-}
-
-export type JangleItemOptions = {
-  label: String
-}
+export type JangleItem = Schema
 
 export type Config = {
   mongo: {

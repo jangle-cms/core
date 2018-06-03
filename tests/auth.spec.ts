@@ -15,18 +15,10 @@ describe('auth', () => {
     },
     secret: 'some-secret',
     lists: {
-      Example: {
-        options: {
-          labels: {
-            singular: 'Example',
-            plural: 'Examples'
-          }
-        },
-        schema: new Schema({
-          name: String,
-          age: Number
-        })
-      }
+      Example: new Schema({
+        name: String,
+        age: Number
+      })
     },
     items: {}
   }
