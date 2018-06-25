@@ -72,8 +72,10 @@ describe('auth', () => {
   
     it('allows creation of valid user', () =>
       Auth.auth.signUp({ name: 'Admin User', email: login.email, password: login.password })
-        .then(({ token }) => {
+        .then(({ name, email, token }) => {
           Token = token
+          expect(name).to.exist
+          expect(email).to.exist
           expect(token).to.exist
         })
     )
@@ -131,6 +133,15 @@ describe('auth', () => {
       Auth.auth.signIn(login.email, login.password)
         .then(({ token }) => {
           expect(token).to.equal(Token)
+        })
+    )
+
+    it('returns name, email, and token on success', () =>
+      Auth.auth.signIn(login.email, login.password)
+        .then(({ name, email, token }) => {
+          expect(name).to.exist
+          expect(email).to.exist
+          expect(token).to.exist
         })
     )
 

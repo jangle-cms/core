@@ -51,6 +51,12 @@ const createAdminUser = (User: IUserModel, { name, email, password }: UserConfig
   User.create({ name, email, password, role: 'admin' })
     .catch(_reason => Promise.reject(errors.invalidUser))
 
+const returnUser = (user : UserConfig) => (token : Token) : User => ({
+  name: user.name,
+  email: user.email,
+  token
+})
+
 const makeSignUp = ({ secret, User }: AuthContext) =>
   (user: UserConfig): Promise<User> =>
     makeCanSignUp(User)()
@@ -59,17 +65,13 @@ const makeSignUp = ({ secret, User }: AuthContext) =>
         : Promise.reject(errors.adminExists)
       )
       .then(({ _id }) => generateToken(secret, { id: _id }))
-      .then(token => ({
-        name: user.name,
-        email: user.email,
-        token
-      }))
+      .then(returnUser(user))
       .catch(reject)
 
 const makeSignIn = ({ secret, User }: AuthContext) =>
   (email: string, password: string): Promise<User> =>
     User.findOne({ email })
-      .select('password')
+      .select('name email password')
       .lean()
       .exec()
       .then(user => user || Promise.reject(errors.badLogin))

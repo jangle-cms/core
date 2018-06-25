@@ -1,6 +1,6 @@
 {
   "name": "@jangle/core",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "The core layer for Jangle CMS.",
   "repository": {
     "type": "git",
