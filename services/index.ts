@@ -422,11 +422,10 @@ const makeSchema = (content: Model<Document>) : Promise<JangleSchema> => {
     fields: fieldNames
       .map(name => {
         const field = schema[name]
-
         return {
           name,
           label: name,
-          type: field.instance,
+          type: (field.options && field.options.ref) || field.instance,
           default: '',
           required: field.isRequired || false
         }
