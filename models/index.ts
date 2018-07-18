@@ -2,7 +2,7 @@ import { Config, Dict, MongoUris, Models, UserModels, MetaModels, ModelsNodeCont
 import { Meta, User, History } from './schemas'
 import * as mongoose from 'mongoose'
 import { reject, debug, toCollectionName, stamp, debugWithLabel, formatError } from '../utils'
-import { Model } from 'mongoose';
+import { Model } from 'mongoose'
 
 export const errors = {
   badUri: 'Could not connect to MongoDB.'
@@ -74,22 +74,17 @@ const getItemModels = getModels({
 
 const dropIndexes = (model : Model<any>) : Promise<Model<any>> =>
   model.collection.dropIndexes()
-    .then(_ => model)
-    .catch(_ => model)
-
-const initializeUserModel = (model : any) : Model<any> =>
-  model.init()
+    .then((_ : any) => model)
+    .catch((_ : any) => model)
 
 const initializeUserModels = (userModels: UserModels): Promise<UserModels> =>
   Promise.all(userModels.map(userModel =>
     Promise.all([
       dropIndexes(userModel.content)
-        .then(initializeUserModel)
         .catch(formatError),
       dropIndexes(userModel.live)
-        .then(initializeUserModel)
         .catch(formatError),
-      (userModel.history as any).init()
+      userModel.history
     ])
       .then(([ content, live, history ]) => ({
         modelName: userModel.modelName,
@@ -113,11 +108,11 @@ const createJangleAdmin = (JangleUser: Model<any>) : Promise<IJangleItem> =>
   findAdmin(JangleUser)
     .lean()
     .exec()
-    .then(admin => admin
+    .then((admin : any) => admin
       ? admin
       : JangleUser.collection
           .insertOne(jangleAdmin)
-          .then(_ => findAdmin(JangleUser)) as any
+          .then((_ : any) => findAdmin(JangleUser)) as any
     )
 
 const createItems = (JangleUser: Model<any>, models: UserModels) =>
@@ -143,11 +138,9 @@ const createItems = (JangleUser: Model<any>, models: UserModels) =>
 
 const initializeJangleModels = ({ connections, schemas }: InitializeJangleModelsConfig): Promise<MetaModels> =>
   Promise.all([
-    (connections.content.model('JangleUser', schemas.User) as any).init()
+    connections.content.model('JangleUser', schemas.User) as any
   ])
-    .then(([ User ]) => ({
-      User
-    }))
+    .then(([ User ]) => ({ User }))
     .catch(reject)
 
 const initializeModels = ({ config, Meta }: InitializeModelConfig) => (connections : MongoConnections): Promise<Models> =>
