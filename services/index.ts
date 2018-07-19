@@ -421,11 +421,15 @@ const makeSchema = (content: Model<Document>) : Promise<JangleSchema> => {
     },
     fields: fieldNames
       .map(name => {
-        const field = schema[name]
+        const field = (schema[name])
+        const refOrSchema = (field : any, otherField: any): string =>
+          (field.options && field.options.ref) || otherField.instance 
         return {
           name,
           label: name,
-          type: (field.options && field.options.ref) || field.instance,
+          type: field.instance === 'Array'
+            ? refOrSchema(field, field.caster) + '[]'
+            : refOrSchema(field, field),
           default: '',
           required: field.isRequired || false
         }
