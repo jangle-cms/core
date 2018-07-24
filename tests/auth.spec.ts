@@ -129,13 +129,6 @@ describe('auth', () => {
         )
     )
 
-    it('returns same token on success', () =>
-      Auth.auth.signIn(login.email, login.password)
-        .then(({ token }) => {
-          expect(token).to.equal(Token)
-        })
-    )
-
     it('returns name, email, and token on success', () =>
       Auth.auth.signIn(login.email, login.password)
         .then(({ name, email, token }) => {
