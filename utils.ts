@@ -1,6 +1,5 @@
 import * as crypto from 'crypto'
-import { Config, Dict, UserConfig, ProtectedListService, ListService, Token, ProtectedJangleCore, JangleCore, Id, Signature } from './types'
-import { Schema, ValidationError, Collection } from 'mongoose'
+import { Config, Map, UserConfig, ProtectedListService, ListService, Token, ProtectedJangleCore, JangleCore, Id, Signature } from './types'
 import * as bcrypt from 'bcrypt'
 import * as pluralize from 'pluralize'
 import R = require('ramda');
@@ -60,7 +59,7 @@ export const compare = (password: string, hash: string) : Promise<boolean> =>
     })
   })
 
-export const isDictOf = (Type: any, thing?: Dict<any>): boolean =>
+export const isMapOf = (Type: any, thing?: Map<any>): boolean =>
   thing
     ? Object.keys(thing).every(member => thing[member] instanceof Type)
     : false
@@ -84,9 +83,9 @@ export const parseConfig = (config: Config, baseConfig: Config): Promise<Config>
     ? Promise.reject(parseConfigErrors.badContentUri)
   : config && config.mongo && config.mongo.live && !startsWith('mongodb://', config.mongo.live)
     ? Promise.reject(parseConfigErrors.badLiveUri)
-  // : config && config.lists && !isDictOf(Schema, config.lists)
+  // : config && config.lists && !isMapOf(Schema, config.lists)
   //   ? Promise.reject(parseConfigErrors.badLists)
-  // : config && config.items && !isDictOf(Schema, config.items)
+  // : config && config.items && !isMapOf(Schema, config.items)
   //   ? Promise.reject(parseConfigErrors.badItems)
   : config && config.secret && typeof config.secret !== 'string'
     ? Promise.reject(parseConfigErrors.badSecret)
@@ -142,7 +141,7 @@ export const parseConfigAsUser = (user: UserConfig, config: Config, baseConfig: 
 const allowMissingParams = (f : any) => (arg : any, ...params : any[]) =>
   f(arg, ...params)
 
-export const authenticateService = <T>(token: Token, ProtectedListService: ProtectedListService<T>): ListService<T> =>
+export const authenticateService = (token: Token, ProtectedListService: ProtectedListService): ListService =>
   Object.keys(ProtectedListService)
     .filter(functionName => functionName !== 'live')
     .reduce((service: any, functionName) => {
@@ -151,14 +150,14 @@ export const authenticateService = <T>(token: Token, ProtectedListService: Prote
       return service
     }, {
       live: ProtectedListService.live
-    }) as ListService<T>
+    }) as ListService
 
-export const authenticateServices = (token: Token, ProtectedListServices: Dict<ProtectedListService<any>>): Dict<ListService<any>> =>
+export const authenticateServices = (token: Token, ProtectedListServices: Map<ProtectedListService>): Map<ListService> =>
   Object.keys(ProtectedListServices)
-    .reduce((services: Dict<ListService<any>>, serviceName) => {
+    .reduce((services: Map<ListService>, serviceName) => {
       services[serviceName] = authenticateService(token, ProtectedListServices[serviceName])
       return services
-    }, {}) as Dict<ListService<any>>
+    }, {}) as Map<ListService>
 
 export const authenticateCore = (user: UserConfig) => ({ auth, lists, items }: ProtectedJangleCore): Promise<JangleCore> =>
   auth.canSignUp()

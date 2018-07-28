@@ -1,4 +1,4 @@
-import { Config, Dict, MongoUris, Models, UserModels, MetaModels, ModelsNodeContext, MongoConnections, InitializeUserModelsContext, InitializeJangleModelsConfig, InitializeModelConfig, ModelsContext, Schema, UserModel, IJangleMeta, IJangleItem, IJangleItemMeta, JangleItem, JangleList } from '../types'
+import { Config, Map, MongoUris, Models, UserModels, MetaModels, ModelsNodeContext, MongoConnections, InitializeUserModelsContext, InitializeJangleModelsConfig, InitializeModelConfig, ModelsContext, Schema, UserModel, IJangleMeta, IJangleItem, IJangleItemMeta } from '../types'
 import { Meta, User, History } from './schemas'
 import * as mongoose from 'mongoose'
 import { reject, debug, toCollectionName, stamp, debugWithLabel, formatError } from '../utils'

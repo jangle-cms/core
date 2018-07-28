@@ -1,15 +1,14 @@
 import {
   Auth, ProtectedJangleCore,
   UserModels, ValidateFunction,
-  MetaModels, ProtectedListService, IJangleItem, Dict, UserModel, Token, AnyParams, ProtectedAnyFunction, CountParams, FindParams, GetParams, Id, IJangleItemInput, Signature, IHistoryDocument, Model,
+  MetaModels, ProtectedListService, IJangleItem, Map, UserModel, AnyParams, CountParams, FindParams, GetParams, Id, IJangleItemInput, IHistoryDocument, Model,
   Document,
   JangleSchema,
   JangleField,
-  IJangleMeta,
   ProtectedItemService
 } from '../types'
 import * as R from 'ramda'
-import { reject, debug, stamp, formatError } from '../utils'
+import { reject, stamp, formatError } from '../utils'
 import { Schema, Query } from 'mongoose'
 import * as pluralize from 'pluralize'
 
@@ -25,10 +24,10 @@ type InitializeItemServicesConfig = {
   jangleModels: MetaModels
 }
 
-type ListService = ProtectedListService<IJangleItem>
-type ListServices = Dict<ListService>
-type ItemService = ProtectedItemService<IJangleItem>
-type ItemServices = Dict<ItemService>
+type ListService = ProtectedListService
+type ListServices = Map<ListService>
+type ItemService = ProtectedItemService
+type ItemServices = Map<ItemService>
 
 export const errors = {
   missingId: 'Must provide an _id.',
@@ -37,17 +36,17 @@ export const errors = {
   negativeVersionNumber: 'Version must be greater than zero.'
 }
 
-const getDefaultsForSchema = (schema: Schema): Dict<any> => {
+const getDefaultsForSchema = (schema: Schema): Map<any> => {
   const paths = (schema as any).paths
   return Object.keys(paths)
     .filter(path => [ 'jangle', '_id' ].indexOf(path) === -1)
-    .reduce((defaults : Dict<any>, key) => {
+    .reduce((defaults : Map<any>, key) => {
       defaults[key] = paths[key].defaultValue || undefined
       return defaults
     }, {})
 }
 
-const provideDefaultValues = (schema: Schema) => (original: Dict<any> | null) : Dict<any> => {
+const provideDefaultValues = (schema: Schema) => (original: Map<any> | null) : Map<any> => {
   const defaults = getDefaultsForSchema(schema)
   const originalItem = original || {}
   return [ ...Object.keys(originalItem), ...Object.keys(defaults) ]
@@ -58,7 +57,7 @@ const provideDefaultValues = (schema: Schema) => (original: Dict<any> | null) : 
         item[key] = defaults[key]
       }
       return item
-    }, {} as Dict<any>)
+    }, {} as Map<any>)
 }
 
 const initializeListServices = ({ listModels, validate }: InitializeListServicesConfig): ListServices =>
@@ -107,7 +106,7 @@ const makeFind = ({ model, schema }: ModifyContext) => (params?: FindParams): Pr
     .lean()
     .exec()
     .then((items : any) => items.map(provideDefaultValues(schema)))
-    .then((items : any) => items.filter((item: Dict<any>) => Object.keys(item).length > 0))
+    .then((items : any) => items.filter((item: Map<any>) => Object.keys(item).length > 0))
     .catch(reject) as any
 }
 

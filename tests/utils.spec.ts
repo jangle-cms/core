@@ -1,4 +1,4 @@
-import { debug, hash, encrypt, compare, isDictOf, parseConfigErrors, parseConfig, isValidUser, parseConfigAsUser, invalidUserErrors, authenticateService, authenticateServices, authenticateCore } from '../utils'
+import { debug, hash, encrypt, compare, isMapOf, parseConfigErrors, parseConfig, isValidUser, parseConfigAsUser, invalidUserErrors, authenticateService, authenticateServices, authenticateCore } from '../utils'
 import { expect } from 'chai'
 import 'mocha'
 import { Config } from '../types'
@@ -99,7 +99,7 @@ describe('utils', () => {
 
   })
 
-  describe('isDictOf', () => {
+  describe('isMapOf', () => {
     const all = {
       thing: [],
       otherThing: []
@@ -116,23 +116,23 @@ describe('utils', () => {
     }
 
     it('works with empty', () => {
-      expect(isDictOf(Array, {})).to.equal(true)
+      expect(isMapOf(Array, {})).to.equal(true)
     })
 
     it('works with all', () => {
-      expect(isDictOf(Array, all)).to.equal(true)
+      expect(isMapOf(Array, all)).to.equal(true)
     })
 
     it('breaks with some', () => {
-      expect(isDictOf(Array, some)).to.equal(false)
+      expect(isMapOf(Array, some)).to.equal(false)
     })
 
     it('breaks with none', () => {
-      expect(isDictOf(Array, none)).to.equal(false)
+      expect(isMapOf(Array, none)).to.equal(false)
     })
 
     it('breaks with null', () => {
-      expect(isDictOf(Array, null)).to.equal(false)
+      expect(isMapOf(Array, null)).to.equal(false)
     })
   })
 
@@ -154,8 +154,8 @@ describe('utils', () => {
     config.mongo &&
     startsWith('mongodb://', config.mongo.content) &&
     startsWith('mongodb://', config.mongo.live) &&
-    config.lists && isDictOf(Schema, config.lists) &&
-    config.items && isDictOf(Schema, config.items) &&
+    config.lists && isMapOf(Schema, config.lists) &&
+    config.items && isMapOf(Schema, config.items) &&
     typeof config.secret === 'string') || false
 
   const exampleConfigs = {
