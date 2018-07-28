@@ -149,12 +149,12 @@ describe('core', () => {
   describe('any', () => {
 
     it('requires a token', () =>
-      Jangle.lists.Example.any(undefined)
+      Jangle.lists.Example.any(undefined)()
         .catch(reason => expect(reason).to.equal(authErrors.invalidToken))
     )
 
     it('returns a boolean', () =>
-      Jangle.lists.Example.any(Token)
+      Jangle.lists.Example.any(Token)()
         .then(hasAny => expect(hasAny).to.be.a('boolean'))
     )
 
@@ -163,11 +163,11 @@ describe('core', () => {
     )
 
     it('accepts empty params', () =>
-      Jangle.lists.Example.any(Token, {})
+      Jangle.lists.Example.any(Token)({})
     )
 
     it('accepts params with where clause', () =>
-      Jangle.lists.Example.any(Token, { where: { name: 'Ryan' } })
+      Jangle.lists.Example.any(Token)({ where: { name: 'Ryan' } })
     )
 
   })
@@ -175,25 +175,25 @@ describe('core', () => {
   describe('count', () => {
 
     it('requires a token', () =>
-      Jangle.lists.Example.count(undefined)
+      Jangle.lists.Example.count(undefined)()
         .catch(reason => expect(reason).to.equal(authErrors.invalidToken))
     )
 
     it('returns a number', () =>
-      Jangle.lists.Example.count(Token)
+      Jangle.lists.Example.count(Token)()
         .then(count => expect(count).to.be.a('number'))
     )
 
     it('works without params', () =>
-      Jangle.lists.Example.count(Token)
+      Jangle.lists.Example.count(Token)()
     )
 
     it('accepts empty params', () =>
-      Jangle.lists.Example.count(Token, {})
+      Jangle.lists.Example.count(Token)({})
     )
 
     it('accepts params with where clause', () =>
-      Jangle.lists.Example.count(Token, { where: { name: 'Ryan' } })
+      Jangle.lists.Example.count(Token)({ where: { name: 'Ryan' } })
     )
 
   })
@@ -201,31 +201,31 @@ describe('core', () => {
   describe('find', () => {
 
     it('requires a token', () =>
-      Jangle.lists.Example.find(undefined)
+      Jangle.lists.Example.find(undefined)()
         .catch(reason => expect(reason).to.equal(authErrors.invalidToken))
     )
 
     it('returns a list of items', () =>
-      Jangle.lists.Example.find(Token)
+      Jangle.lists.Example.find(Token)()
         .then(items => {
           expect(items).to.be.an.instanceOf(Array)
         })
     )
 
     it('works without params', () =>
-      Jangle.lists.Example.find(Token)
+      Jangle.lists.Example.find(Token)()
     )
 
     it('accepts empty params', () =>
-      Jangle.lists.Example.find(Token, {})
+      Jangle.lists.Example.find(Token)({})
     )
 
     it('accepts params with where clause', () =>
-      Jangle.lists.Example.find(Token, { where: { name: 'Ryan' } })
+      Jangle.lists.Example.find(Token)({ where: { name: 'Ryan' } })
     )
 
     it('accepts params with multiple clauses', () =>
-      Jangle.lists.Example.find(Token, {
+      Jangle.lists.Example.find(Token)({
         where: { name: 'Ryan' },
         skip: 0,
         limit: 1,
@@ -240,19 +240,19 @@ describe('core', () => {
     const someId = new ObjectId()
 
     it('requires a token', () =>
-      Jangle.lists.Example.get(undefined, undefined)
+      Jangle.lists.Example.get(undefined)(undefined)
         .then(fail)
         .catch(reason => expect(reason).to.equal(authErrors.invalidToken))
     )
 
     it('requires an _id', () =>
-      Jangle.lists.Example.get(Token, undefined)
+      Jangle.lists.Example.get(Token)(undefined)
         .then(fail)
         .catch(reason => expect(reason).to.equal(errors.missingId))
     )
 
     it('returns a single item', () =>
-      Jangle.lists.Example.get(Token, someId)
+      Jangle.lists.Example.get(Token)(someId)
         .then(item => {
           expect(item).to.not.be.an.instanceOf(Array)
           expect(item).to.not.exist
@@ -260,11 +260,11 @@ describe('core', () => {
     )
 
     it('accepts empty params', () =>
-      Jangle.lists.Example.get(Token, someId, {})
+      Jangle.lists.Example.get(Token)(someId, {})
     )
 
     it('accepts params with select clause', () =>
-      Jangle.lists.Example.get(Token, someId, { select: 'name' })
+      Jangle.lists.Example.get(Token)(someId, { select: 'name' })
     )
 
   })
@@ -285,18 +285,18 @@ describe('core', () => {
     const invalidItem = { age: 24 }
 
     before(() =>
-      Jangle.lists.Example.create(Token, validItem)
+      Jangle.lists.Example.create(Token)(validItem)
         .then(item => { Item = item })
     )
 
     it('requires a token', () =>
-      Jangle.lists.Example.create(undefined, undefined)
+      Jangle.lists.Example.create(undefined)(undefined)
         .then(fail)
         .catch(reason => expect(reason).to.equal(authErrors.invalidToken))
     )
 
     it('enforces required fields', () =>
-      Jangle.lists.Example.create(Token, invalidItem)
+      Jangle.lists.Example.create(Token)(invalidItem)
         .then(fail)
         .catch(reason => expect(reason).to.exist)
     )
@@ -322,30 +322,30 @@ describe('core', () => {
     const invalidUpdate = { age: 25 }
 
     before(() =>
-      Jangle.lists.Example.update(Token, Item._id, validUpdate)
+      Jangle.lists.Example.update(Token)(Item._id, validUpdate)
         .then(item => { UpdateReturnedItem = item })
     )
 
     it('requires a token', () =>
-      Jangle.lists.Example.update(undefined, undefined, undefined)
+      Jangle.lists.Example.update(undefined)(undefined, undefined)
         .then(fail)
         .catch(reason => expect(reason).to.equal(authErrors.invalidToken))
     )
 
     it('requires an _id', () =>
-      Jangle.lists.Example.update(Token, undefined, undefined)
+      Jangle.lists.Example.update(Token)(undefined, undefined)
         .then(fail)
         .catch(reason => expect(reason).to.equal(errors.missingId))
     )
 
     it('requires an item', () =>
-      Jangle.lists.Example.update(Token, Item._id, undefined)
+      Jangle.lists.Example.update(Token)(Item._id, undefined)
         .then(fail)
         .catch(reason => expect(reason).to.equal(errors.missingItem))
     )
 
     it('enforces required fields', () =>
-      Jangle.lists.Example.update(Token, Item._id, invalidUpdate)
+      Jangle.lists.Example.update(Token)(Item._id, invalidUpdate)
         .then(fail)
         .catch(reason => expect(reason).to.exist)
     )
@@ -361,24 +361,24 @@ describe('core', () => {
     const validPatch = { age: 26 }
 
     before(() =>
-      Jangle.lists.Example.patch(Token, Item._id, validPatch)
+      Jangle.lists.Example.patch(Token)(Item._id, validPatch)
         .then(item => { PatchReturnedItem = item })
     )
 
     it('requires a token', () =>
-      Jangle.lists.Example.patch(undefined, undefined, undefined)
+      Jangle.lists.Example.patch(undefined)(undefined, undefined)
         .then(fail)
         .catch(reason => expect(reason).to.equal(authErrors.invalidToken))
     )
 
     it('requires an _id', () =>
-      Jangle.lists.Example.patch(Token, undefined, undefined)
+      Jangle.lists.Example.patch(Token)(undefined, undefined)
         .then(fail)
         .catch(reason => expect(reason).to.equal(errors.missingId))
     )
 
     it('requires an item', () =>
-      Jangle.lists.Example.patch(Token, Item._id, undefined)
+      Jangle.lists.Example.patch(Token)(Item._id, undefined)
         .then(fail)
         .catch(reason => expect(reason).to.equal(errors.missingItem))
     )
@@ -394,29 +394,29 @@ describe('core', () => {
   describe('remove', () => {
 
     before(() => 
-      Jangle.lists.Example.remove(Token, Item._id)
+      Jangle.lists.Example.remove(Token)(Item._id)
         .then(item => { RemovedItem = item })
     )
 
     it('requires a token', () =>
-      Jangle.lists.Example.remove(undefined, undefined)
+      Jangle.lists.Example.remove(undefined)(undefined)
         .then(fail)
         .catch(reason => expect(reason).to.equal(authErrors.invalidToken))
     )
 
     it('requires an _id', () =>
-      Jangle.lists.Example.remove(Token, undefined)
+      Jangle.lists.Example.remove(Token)(undefined)
         .then(fail)
         .catch(reason => expect(reason).to.equal(errors.missingId))
     )
 
     it('removes item from the collection', () =>
-      Jangle.lists.Example.any(Token)
+      Jangle.lists.Example.any(Token)()
         .then(hasAny => expect(hasAny).to.be.false)
     )
 
     it('stores the full old item in the history collection', () =>
-      Jangle.lists.Example.history(Token, Item._id)
+      Jangle.lists.Example.history(Token)(Item._id)
         .then(items => items[0])
         .then((firstItem) => {
           expect(firstItem.changes).to.exist
@@ -435,19 +435,19 @@ describe('core', () => {
   describe('restore', () => {
 
     before(() =>
-      Jangle.lists.Example.rollback(Token, Item._id)
+      Jangle.lists.Example.rollback(Token)(Item._id)
         .then(item => { RestoredItem = item })
         .catch(console.error)
     )
 
     it('requires a token', () =>
-      Jangle.lists.Example.rollback(undefined, undefined)
+      Jangle.lists.Example.rollback(undefined)(undefined)
         .then(fail)
         .catch(reason => expect(reason).to.equal(authErrors.invalidToken))
     )
 
     it('requires an _id', () =>
-      Jangle.lists.Example.rollback(Token, undefined)
+      Jangle.lists.Example.rollback(Token)(undefined)
         .then(fail)
         .catch(reason => expect(reason).to.equal(errors.missingId))
     )
@@ -478,19 +478,19 @@ describe('core', () => {
   describe('publish', () => {
 
     it('requires a token', () =>
-      Jangle.lists.Example.publish(undefined, undefined)
+      Jangle.lists.Example.publish(undefined)(undefined)
         .then(fail)
         .catch(reason => expect(reason).to.equal(authErrors.invalidToken))
     )
 
     it('requires an _id', () =>
-      Jangle.lists.Example.publish(Token, undefined)
+      Jangle.lists.Example.publish(Token)(undefined)
         .then(fail)
         .catch(reason => expect(reason).to.equal(errors.missingId))
     )
 
     it('returns the published item', () =>
-      Jangle.lists.Example.publish(Token, Item._id)
+      Jangle.lists.Example.publish(Token)(Item._id)
         .then((item : any) => {
           expect(item.name).to.exist
           expect(item.age).to.exist
@@ -512,19 +512,19 @@ describe('core', () => {
   describe('unpublish', () => {
 
     it('requires a token', () =>
-      Jangle.lists.Example.unpublish(undefined, undefined)
+      Jangle.lists.Example.unpublish(undefined)(undefined)
         .then(fail)
         .catch(reason => expect(reason).to.equal(authErrors.invalidToken))
     )
 
     it('requires an _id', () =>
-      Jangle.lists.Example.unpublish(Token, undefined)
+      Jangle.lists.Example.unpublish(Token)(undefined)
         .then(fail)
         .catch(reason => expect(reason).to.equal(errors.missingId))
     )
 
     it('returns the unpublished item', () =>
-      Jangle.lists.Example.unpublish(Token, Item._id)
+      Jangle.lists.Example.unpublish(Token)(Item._id)
         .then((item : any) => {
           expect(item.name).to.exist
           expect(item.age).to.exist
@@ -546,19 +546,19 @@ describe('core', () => {
   describe('history', () => {
 
     it('requires a token', () =>
-      Jangle.lists.Example.history(undefined, undefined)
+      Jangle.lists.Example.history(undefined)(undefined)
         .then(fail)
         .catch(reason => expect(reason).to.equal(authErrors.invalidToken))
     )
 
     it('requires an _id', () =>
-      Jangle.lists.Example.history(Token, undefined)
+      Jangle.lists.Example.history(Token)(undefined)
         .then(fail)
         .catch(reason => expect(reason).to.equal(errors.missingId))
     )
 
     it('sorts by version, descending', () =>
-      Jangle.lists.Example.history(Token, Item._id)
+      Jangle.lists.Example.history(Token)(Item._id)
         .then(items => items.map(({ version }) => version))
         .then(versions => versions
           .reduce(({ isDescending, lastNumber }, number) =>
@@ -571,7 +571,7 @@ describe('core', () => {
     )
 
     it('returns three old versions', () =>
-      Jangle.lists.Example.history(Token, Item._id)
+      Jangle.lists.Example.history(Token)(Item._id)
         .then(items => expect(items).to.have.length(3))
     )
 
@@ -580,25 +580,25 @@ describe('core', () => {
   describe('previewRollback', () => {
 
     it('requires a token', () =>
-      Jangle.lists.Example.previewRollback(undefined, undefined, undefined)
+      Jangle.lists.Example.previewRollback(undefined)(undefined, undefined)
         .then(fail)
         .catch(reason => expect(reason).to.equal(authErrors.invalidToken))
     )
 
     it('requires an _id', () =>
-      Jangle.lists.Example.previewRollback(Token, undefined, undefined)
+      Jangle.lists.Example.previewRollback(Token)(undefined, undefined)
         .then(fail)
         .catch(reason => expect(reason).to.equal(errors.missingId))
     )
 
     it('requires a positive version number', () =>
-      Jangle.lists.Example.previewRollback(Token, Item._id, 0)
+      Jangle.lists.Example.previewRollback(Token)(Item._id, 0)
         .then(fail)
         .catch(reason => expect(reason).to.equal(errors.negativeVersionNumber))
     )
 
     it('returns a preview of the rollback', () =>
-      Jangle.lists.Example.previewRollback(Token, Item._id, 1)
+      Jangle.lists.Example.previewRollback(Token)(Item._id, 1)
         .then((item : any) => {
           expect(item).to.exist
           expect(item.name).to.exist
@@ -609,7 +609,7 @@ describe('core', () => {
     )
 
     it('does not actually rollback', () =>
-      Jangle.lists.Example.previewRollback(Token, Item._id, 1)
+      Jangle.lists.Example.previewRollback(Token)(Item._id, 1)
         .then((item : any) => {
           expect(item).to.exist
           expect(item.jangle).to.exist
@@ -618,7 +618,7 @@ describe('core', () => {
     )
 
     it('has same values as first version', () =>
-      Jangle.lists.Example.previewRollback(Token, Item._id, 1)
+      Jangle.lists.Example.previewRollback(Token)(Item._id, 1)
         .then((item : any) => {
           let initialItem : any = Item
           expect(item.name).to.equal(initialItem.name)
@@ -632,25 +632,25 @@ describe('core', () => {
   describe('rollback', () => {
 
     it('requires a token', () =>
-      Jangle.lists.Example.rollback(undefined, undefined, undefined)
+      Jangle.lists.Example.rollback(undefined)(undefined, undefined)
         .then(fail)
         .catch(reason => expect(reason).to.equal(authErrors.invalidToken))
     )
 
     it('requires an _id', () =>
-      Jangle.lists.Example.rollback(Token, undefined, undefined)
+      Jangle.lists.Example.rollback(Token)(undefined, undefined)
         .then(fail)
         .catch(reason => expect(reason).to.equal(errors.missingId))
     )
 
     it('requires a positive version number', () =>
-      Jangle.lists.Example.rollback(Token, Item._id, 0)
+      Jangle.lists.Example.rollback(Token)(Item._id, 0)
         .then(fail)
         .catch(reason => expect(reason).to.equal(errors.negativeVersionNumber))
     )
 
     it('returns old item on rollback', () =>
-      Jangle.lists.Example.rollback(Token, Item._id, 1)
+      Jangle.lists.Example.rollback(Token)(Item._id, 1)
         .then((item : any) => {
           expect(item).to.exist
           expect(item.name).to.exist
@@ -661,7 +661,7 @@ describe('core', () => {
     )
 
     it('created a new version after rollback', () =>
-      Jangle.lists.Example.get(Token, Item._id)
+      Jangle.lists.Example.get(Token)(Item._id)
         .then(item => expect(item.jangle.version).to.equal(6))
     )
 

@@ -178,36 +178,6 @@ export type ItemRollbackFunction = (version?: number) => Promise<IJangleItem>
 
 export type SchemaFunction = () => Promise<JangleSchema>
 
-
-export type ProtectedAnyFunction = (token: Token, params?: AnyParams) => Promise<boolean>
-export type ProtectedCountFunction = (token: Token, params?: CountParams) => Promise<number>
-export type ProtectedFindFunction = (token: Token, params?: FindParams) => Promise<IJangleItem[]>
-export type ProtectedGetFunction = (token: Token, id: Id, params?: GetParams) => Promise<IJangleItem>
-
-export type ProtectedItemGetFunction = (token: Token, params?: GetParams) => Promise<IJangleItem>
-
-export type ProtectedCreateFunction = (token: Token, newItem?: object) => Promise<IJangleItem>
-export type ProtectedUpdateFunction = (token: Token, id: Id, newItem: object) => Promise<IJangleItem>
-export type ProtectedPatchFunction = (token: Token, id: Id, newValues: Map<any>) => Promise<IJangleItem>
-export type ProtectedRemoveFunction = (token: Token, id: Id) => Promise<IJangleItem>
-
-export type ProtectedItemUpdateFunction = (token: Token, newItem: object) => Promise<IJangleItem>
-export type ProtectedItemPatchFunction = (token: Token, newValues: Map<any>) => Promise<IJangleItem>
-
-export type ProtectedPublishFunction = (token: Token, id: Id) => Promise<IJangleItem>
-export type ProtectedUnpublishFunction = (token: Token, id: Id) => Promise<IJangleItem>
-
-export type ProtectedItemPublishFunction = (token: Token) => Promise<IJangleItem>
-export type ProtectedItemUnpublishFunction = (token: Token) => Promise<IJangleItem>
-
-export type ProtectedHistoryFunction = (token: Token, id: Id) => Promise<IHistory[]>
-export type ProtectedPreviewRollbackFunction = (token: Token, id: Id, version?: number) => Promise<IJangleItem>
-export type ProtectedRollbackFunction = (token: Token, id: Id, version?: number) => Promise<IJangleItem>
-
-export type ProtectedItemHistoryFunction = (token: Token) => Promise<IHistory[]>
-export type ProtectedItemPreviewRollbackFunction = (token: Token, version?: number) => Promise<IJangleItem>
-export type ProtectedItemRollbackFunction = (token: Token, version?: number) => Promise<IJangleItem>
-
 export type LiveService = {
   any: AnyFunction
   count: CountFunction
@@ -283,40 +253,42 @@ export type ItemService = {
 
 export type ProtectedMetaListService = {
 
-  any: ProtectedAnyFunction
-  count: ProtectedCountFunction
-  find: ProtectedFindFunction
-  get: ProtectedGetFunction
+  any: Protected<AnyFunction>
+  count: Protected<CountFunction>
+  find: Protected<FindFunction>
+  get: Protected<GetFunction>
 
-  create: ProtectedCreateFunction
-  update: ProtectedUpdateFunction
-  patch: ProtectedPatchFunction
-  remove: ProtectedRemoveFunction
+  create: Protected<CreateFunction>
+  update: Protected<UpdateFunction>
+  patch: Protected<PatchFunction>
+  remove: Protected<RemoveFunction>
 
   schema: SchemaFunction
 
 }
 
+type Protected<T> = (token: Token) => T
+
 export type ProtectedListService = {
 
-  any: ProtectedAnyFunction
-  count: ProtectedCountFunction
-  find: ProtectedFindFunction
-  get: ProtectedGetFunction
+  any: Protected<AnyFunction>
+  count: Protected<CountFunction>
+  find: Protected<FindFunction>
+  get: Protected<GetFunction>
 
-  create: ProtectedCreateFunction
-  update: ProtectedUpdateFunction
-  patch: ProtectedPatchFunction
-  remove: ProtectedRemoveFunction
+  create: Protected<CreateFunction>
+  update: Protected<UpdateFunction>
+  patch: Protected<PatchFunction>
+  remove: Protected<RemoveFunction>
 
-  publish: ProtectedPublishFunction
-  unpublish: ProtectedUnpublishFunction
+  publish: Protected<PublishFunction>
+  unpublish: Protected<UnpublishFunction>
   isLive: IsLiveFunction
   live: LiveService
 
-  history: ProtectedHistoryFunction
-  previewRollback: ProtectedPreviewRollbackFunction
-  rollback: ProtectedRollbackFunction
+  history: Protected<HistoryFunction>
+  previewRollback: Protected<PreviewRollbackFunction>
+  rollback: Protected<RollbackFunction>
 
   schema: SchemaFunction
 
@@ -324,16 +296,16 @@ export type ProtectedListService = {
 
 export type ProtectedItemService = {
 
-  get: ProtectedItemGetFunction
-  update: ProtectedItemUpdateFunction
-  patch: ProtectedItemPatchFunction
+  get: Protected<ItemGetFunction>
+  update: Protected<ItemUpdateFunction>
+  patch: Protected<ItemPatchFunction>
 
-  history: ProtectedItemHistoryFunction
-  previewRollback: ProtectedItemPreviewRollbackFunction
-  rollback: ProtectedItemRollbackFunction
+  history: Protected<ItemHistoryFunction>
+  previewRollback: Protected<ItemPreviewRollbackFunction>
+  rollback: Protected<ItemRollbackFunction>
 
-  publish: ProtectedItemPublishFunction
-  unpublish: ProtectedItemUnpublishFunction
+  publish: Protected<ItemPublishFunction>
+  unpublish: Protected<ItemUnpublishFunction>
   isLive: ItemIsLiveFunction
 
   schema: SchemaFunction

@@ -440,21 +440,21 @@ const makeSchema = (content: Model<Document>) : Promise<JangleSchema> => {
 const initializeItemService = (modelName: string, validate: ValidateFunction, { content, live, history }: UserModel): ItemService => {
   const service : ItemService = {
 
-    get: (token, params) => validate(token).then(_ => makeGet(content.schema, content.findOne({ 'jangle.model': modelName }), params)),
+    get: (token) => (params) => validate(token).then(_ => makeGet(content.schema, content.findOne({ 'jangle.model': modelName }), params)),
 
-    update: (token, newItem) => validate(token).then(userId => makeItemUpdate(modelName, { live, content, history }, userId, newItem)),
-    patch: (token, newItem) => validate(token).then(userId => makeItemPatch(modelName, { live, content, history }, userId, newItem)),
+    update: (token) => (newItem) => validate(token).then(userId => makeItemUpdate(modelName, { live, content, history }, userId, newItem)),
+    patch: (token) => (newItem) => validate(token).then(userId => makeItemPatch(modelName, { live, content, history }, userId, newItem)),
 
     isLive: () => makeIsLive(live.count({ 'jangle.model': modelName })),
-    publish: (token) => validate(token).then(_ => makePublish(live, content.findOne({ 'jangle.model': modelName }))),
-    unpublish: (token) => validate(token).then(_ => makeUnpublish(live.findOneAndRemove({ 'jangle.model': modelName }))),
+    publish: (token) => () => validate(token).then(_ => makePublish(live, content.findOne({ 'jangle.model': modelName }))),
+    unpublish: (token) => () => validate(token).then(_ => makeUnpublish(live.findOneAndRemove({ 'jangle.model': modelName }))),
 
-    history: (token) => validate(token).then(_ => makeHistory(history.find({ 'jangle.model': modelName }))),
-    previewRollback: (token, version) => validate(token).then(userId => makeItemHistoryPreview(modelName, history, content, userId, version)),
-    rollback: (token, version) =>
+    history: (token) => () => validate(token).then(_ => makeHistory(history.find({ 'jangle.model': modelName }))),
+    previewRollback: (token) => (version) => validate(token).then(userId => makeItemHistoryPreview(modelName, history, content, userId, version)),
+    rollback: (token) => (version) =>
       validate(token)
         .then(userId => makeItemHistoryPreview(modelName, history, content, userId, version))
-        .then((newItem) => service.update(token, newItem)),
+        .then((newItem) => service.update(token)(newItem)),
 
     schema: () => makeSchema(content),
 
@@ -470,31 +470,31 @@ const initializeListService = (validate: ValidateFunction, { content, live, hist
 
   const service : ListService = {
 
-    any: (token, params) => validate(token).then(_id => makeAny({ model: content })(params)),
-    count: (token, params) => validate(token).then(_id => makeCount({ model: content })(params)),
-    find: (token, params) => validate(token).then(_id => makeFind({ model: content, schema: content.schema })(params)),
-    get: (token, id, params) => validate(token).then(_id => makeListGet({ model: content, schema: content.schema })(id, params)),
+    any: (token) => (params) => validate(token).then(_id => makeAny({ model: content })(params)),
+    count: (token) => (params) => validate(token).then(_id => makeCount({ model: content })(params)),
+    find: (token) => (params) => validate(token).then(_id => makeFind({ model: content, schema: content.schema })(params)),
+    get: (token) => (id, params) => validate(token).then(_id => makeListGet({ model: content, schema: content.schema })(id, params)),
 
-    create: (token, newItem) => validate(token).then(userId => makeCreate({ model: content, schema: content.schema })(userId, newItem)),
-    update: (token, id, newItem) => validate(token).then(userId => makeUpdate({ content, history, live }, userId, id, newItem)),
-    patch: (token, id, newValues) => validate(token).then(userId => makePatch({ content, history, live }, userId, id, newValues)),
-    remove: (token, id) => validate(token).then(userId => makeRemove({ content, history, live }, userId, id)),
+    create: (token) => (newItem) => validate(token).then(userId => makeCreate({ model: content, schema: content.schema })(userId, newItem)),
+    update: (token) => (id, newItem) => validate(token).then(userId => makeUpdate({ content, history, live }, userId, id, newItem)),
+    patch: (token) => (id, newValues) => validate(token).then(userId => makePatch({ content, history, live }, userId, id, newValues)),
+    remove: (token) => (id) => validate(token).then(userId => makeRemove({ content, history, live }, userId, id)),
 
     isLive: (id) => makeListIsLive({ content, live }, id),
-    publish: (token, id) => validate(token).then(_ => makeListPublish({ content, live }, id)),
-    unpublish: (token, id) => validate(token).then(_ => makeListUnpublish({ content, live }, id)),
+    publish: (token) => (id) => validate(token).then(_ => makeListPublish({ content, live }, id)),
+    unpublish: (token) => (id) => validate(token).then(_ => makeListUnpublish({ content, live }, id)),
 
-    history: (token, id) => validate(token).then(userId => makeListHistory({ history, content, userId }, id)),
-    previewRollback: (token, id, version) => validate(token).then(userId => makeListHistoryPreview({ userId, history, content }, id, version)),
-    rollback: (token, id, version) =>
+    history: (token) => (id) => validate(token).then(userId => makeListHistory({ history, content, userId }, id)),
+    previewRollback: (token) => (id, version) => validate(token).then(userId => makeListHistoryPreview({ userId, history, content }, id, version)),
+    rollback: (token) => (id, version) =>
       validate(token)
         .then(userId => Promise.all([
           makeListHistoryPreview({ userId, history, content }, id, version),
-          service.any(token, { where: { _id: id } })
+          service.any(token)({ where: { _id: id } })
         ]))
         .then(([ newItem, hasExistingItem ]) =>
           hasExistingItem
-            ? service.update(token, id, newItem)
+            ? service.update(token)(id, newItem)
             : makeCreateWithItem({ model: content, schema: content.schema }, { ...newItem, _id: id })
         ),
 
