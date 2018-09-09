@@ -413,7 +413,7 @@ const makeSchema = (content: Model<Document>) : Promise<JangleSchema> => {
 
   return Promise.resolve({
     name: content.modelName,
-    slug: pluralize(content.modelName).toLowerCase(),
+    slug: pluralize(content.modelName).toLowerCase().split(' ').join('-'),
     labels: {
       singular: content.modelName,
       plural: pluralize(content.modelName)
