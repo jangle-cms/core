@@ -423,9 +423,22 @@ const makeSchema = (content: Model<Document>) : Promise<JangleSchema> => {
         const field = (schema[name])
         const refOrSchema = (field : any, otherField: any): string =>
           (field.options && field.options.ref) || otherField.instance 
+        const labelify = (camelCase : string) : string =>
+          camelCase
+            .split('')
+            .reduce((label, letter, index) =>
+              label + ((index === 0)
+                ? letter.toUpperCase()
+                : (letter.toUpperCase() === letter)
+                  ? ' ' + letter
+                  : letter)
+            , '')
+
         return {
           name,
-          label: name,
+          label: field.options
+            ? field.options.label || labelify(name)
+            : labelify(name),
           type: field.instance === 'Array'
             ? refOrSchema(field, field.caster) + '[]'
             : refOrSchema(field, field),
