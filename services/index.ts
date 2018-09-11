@@ -436,6 +436,8 @@ const type = (field : any) =>
     ? field.caster.instance
   : field.instance === 'Array' && field.caster && field.caster.schema
     ? `Object`
+  : field.instance === 'String' && field.options.richText
+    ? 'RichText'
     : field.instance
 
 const ref = (field : any) =>
