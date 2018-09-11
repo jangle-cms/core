@@ -407,9 +407,93 @@ const makeListHistoryPreview = ({ userId, history, content }: HistoryContext, id
 const excludeNames = (names: string[]) => ({ name }: JangleField) : boolean =>
   names.indexOf(name) === -1
 
+const labelify = (camelCase : string) : string =>
+  camelCase
+    .split('')
+    .reduce((label, letter, index) =>
+      label + ((index === 0)
+        ? letter.toUpperCase()
+        : (letter.toUpperCase() === letter)
+          ? ' ' + letter
+          : letter)
+    , '')
+
+const debug = (a : any) => console.log(a) || a
+
+const removeDuplicateNamedFields = (list : JangleField[], item : JangleField) : JangleField[] =>
+  list.some((item_ : JangleField) => item_.name === item.name)
+    ? list
+    : list.concat([ item ])
+
+const toFields = (schema : any) : JangleField[] =>
+  Object.keys(schema)
+    .map(toField(schema))
+    .filter(excludeNames([ 'jangle', '_id' ]))
+    .reduce(removeDuplicateNamedFields, [])
+
+const type = (field : any) =>
+  field.instance === 'Array' && field.caster && field.caster.instance
+    ? field.caster.instance
+  : field.instance === 'Array' && field.caster && field.caster.schema
+    ? `Object`
+    : field.instance
+
+const ref = (field : any) =>
+  (field.instance === 'Array' && field.caster && field.caster.options && field.caster.options.ref)
+    ? field.caster.options.ref
+  : (field.options && field.options.ref)
+    ? field.options.ref
+    : ''
+
+const label = (field : any, name : string) =>
+  field.options
+    ? field.options.label || labelify(name)
+    : labelify(name)
+
+const required = (field : any) =>
+  field.isRequired || false
+
+const schemaOfFieldsPrefixedWith = (schema : any, prefix : string) =>
+  Object.keys(schema)
+    .filter(name => name.indexOf(prefix + '.') === 0)
+    .reduce((newSchema, name) => ({
+      ...newSchema,
+      [name.substring((prefix + '.').length)]: schema[name]
+    }), {})
+
+const toField = (schema: any) => (name : string) : JangleField => {
+  const field = schema[name]
+
+  const isObject = name.indexOf('.') !== -1
+
+  if (isObject) {
+    const [ objectName, ...props ] = name.split('.')
+    return {
+      name: objectName,
+      label: label(field, objectName),
+      type: 'Object',
+      ref: '',
+      isList: false,
+      fields: toFields(schemaOfFieldsPrefixedWith(schema, objectName)),
+      required: required(field)
+    }
+  } else {
+    return {
+      name,
+      label: label(field, name),
+      type: type(field),
+      ref: ref(field),
+      isList: field.instance === 'Array',
+      fields: (field.instance === 'Array' && field.caster && field.caster.schema)
+        ? toFields(field.caster.schema.paths)
+        : [],
+      required: required(field)
+    }
+  }
+}
+
 const makeSchema = (content: Model<Document>) : Promise<JangleSchema> => {
   const schema : any = (content.schema as any).paths
-  const fieldNames = Object.keys(schema)
 
   return Promise.resolve({
     name: content.modelName,
@@ -418,35 +502,7 @@ const makeSchema = (content: Model<Document>) : Promise<JangleSchema> => {
       singular: content.modelName,
       plural: pluralize(content.modelName)
     },
-    fields: fieldNames
-      .map(name => {
-        const field = (schema[name])
-        const refOrSchema = (field : any, otherField: any): string =>
-          (field.options && field.options.ref) || otherField.instance 
-        const labelify = (camelCase : string) : string =>
-          camelCase
-            .split('')
-            .reduce((label, letter, index) =>
-              label + ((index === 0)
-                ? letter.toUpperCase()
-                : (letter.toUpperCase() === letter)
-                  ? ' ' + letter
-                  : letter)
-            , '')
-
-        return {
-          name,
-          label: field.options
-            ? field.options.label || labelify(name)
-            : labelify(name),
-          type: field.instance === 'Array'
-            ? refOrSchema(field, field.caster) + '[]'
-            : refOrSchema(field, field),
-          default: '',
-          required: field.isRequired || false
-        }
-      })
-      .filter(excludeNames([ 'jangle', '_id' ]))
+    fields: toFields(schema)
   })
 }
 

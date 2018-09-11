@@ -37,8 +37,10 @@ export type JangleField = {
   name: string
   label: string
   type: string
-  default: string
   required: boolean
+  isList: boolean
+  fields: JangleField[]
+  ref: string
 }
 
 export type JangleSchema = {
