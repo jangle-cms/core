@@ -8,8 +8,8 @@ import services from './services'
 
 export const baseConfig: Config = {
   mongo: {
-    content: 'mongodb://localhost/jangle',
-    live: 'mongodb://localhost/jangle-live'
+    content: 'mongodb://localhost:27017/jangle',
+    live: 'mongodb://localhost:27017/jangle-live'
   },
   lists: {},
   items: {},
